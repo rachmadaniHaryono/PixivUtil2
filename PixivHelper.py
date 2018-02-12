@@ -4,7 +4,6 @@
 import re
 import os
 import codecs
-from HTMLParser import HTMLParser
 import subprocess
 import sys
 import PixivModel
@@ -15,7 +14,6 @@ import zipfile
 import time
 import unicodedata
 import json
-import urllib2
 import imageio
 import shutil
 import tempfile
@@ -23,6 +21,16 @@ from datetime import datetime, date
 import traceback
 import urllib
 from apng import APNG
+
+import six
+from six.moves.html_parser import HTMLParser
+from six.moves.urllib import request as urllib2
+
+
+if six.PY3:
+    raw_input = input
+    unicode = six.u
+    file = open  # linter fix
 
 Logger = None
 _config = None
@@ -245,11 +253,17 @@ def safePrint(msg, newline=True):
     """Print empty string if UnicodeError raised."""
     for msgToken in msg.split(' '):
         try:
-            print msgToken,
+            if six.PY3:
+                print(msgToken, end='')
+            else:
+                print(msgToken,)
         except UnicodeError:
-            print ('?' * len(msgToken)),
+            if six.PY3:
+                print(('?' * len(msgToken)), end='')
+            else:
+                print(('?' * len(msgToken)),)
     if newline:
-        print ""
+        print("")
 
 
 def setConsoleTitle(title):
@@ -315,7 +329,7 @@ def OpenTextFile(filename, mode='r', encoding='utf-8'):
 
 
 def toUnicode(obj, encoding='utf-8'):
-    if isinstance(obj, basestring):
+    if isinstance(obj, six.string_types):
         if not isinstance(obj, unicode):
             obj = unicode(obj, encoding)
     return obj
@@ -366,9 +380,13 @@ def module_path():
     """ This will get us the program's directory,
   even if we are frozen using py2exe"""
 
+    if we_are_frozen() and six.PY3:
+        return os.path.dirname(unicode(sys.executable))
     if we_are_frozen():
         return os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
 
+    if six.PY3:
+        return os.path.dirname(unicode(__file__))
     return os.path.dirname(unicode(__file__, sys.getfilesystemencoding()))
 
 
@@ -420,9 +438,13 @@ def dumpHtml(filename, html):
 
     if isDumpEnabled:
         try:
-            dump = file(filename, 'wb')
-            dump.write(str(html))
-            dump.close()
+            if six.PY3:
+                with open(filename, 'wb') as dump:
+                    dump.write(str(html))
+            else:
+                dump = file(filename, 'wb')
+                dump.write(str(html))
+                dump.close()
             return filename
         except Exception as ex:
             print_and_log('error', ex.message)
@@ -480,10 +502,10 @@ def unescape_charref(data, encoding):
         if name.lower().startswith("x"):
             name, base = name[1:], 16
         try:
-            result = int(name, base)
+            result = int(name, base)  # NOQA
         except BaseException:
             base = 16
-        uc = unichr(int(name, base))
+        uc = six.unichr(int(name, base))
         if encoding is None:
             return uc
         else:
@@ -534,9 +556,12 @@ def checkFileExists(overwrite, filename, file_size, old_size, backup_old_file):
 def printDelay(retryWait):
     repeat = range(1, retryWait)
     for t in repeat:
-        print t,
+        if six.PY3:
+            print(t, end='')
+        else:
+            print(t,)
         time.sleep(1)
-    print ''
+    print('')
 
 
 def create_custom_request(url, config, referer='https://www.pixiv.net', head=False):
@@ -566,7 +591,10 @@ def downloadImage(url, filename, res, file_size, overwrite):
         if not os.path.exists(directory):
             print_and_log('info', u'Creating directory: ' + directory)
             os.makedirs(directory)
-        save = file(filename + '.pixiv', 'wb+', 4096)
+        if six.PY3:
+            save = open(filename + '.pixiv', 'wb+', 4096)
+        else:
+            save = file(filename + '.pixiv', 'wb+', 4096)
     except IOError:
         print_and_log('error', u"Error at download_image(): Cannot save {0} to {1}: {2}".format(url, filename, sys.exc_info()))
 
@@ -574,13 +602,19 @@ def downloadImage(url, filename, res, file_size, overwrite):
         filename = os.path.split(url)[1]
         filename = filename.split("?")[0]
         filename = sanitizeFilename(filename)
-        save = file(filename + '.pixiv', 'wb+', 4096)
+        if six.PY3:
+            save = open(filename + '.pixiv', 'wb+', 4096)
+        else:
+            save = file(filename + '.pixiv', 'wb+', 4096)
         print_and_log('info', u'File is saved to ' + filename)
 
     # download the file
     prev = 0
     curr = 0
-    print '{0:22} Bytes'.format(curr),
+    if six.PY3:
+        print('{0:22} Bytes'.format(curr), end='')
+    else:
+        print('{0:22} Bytes'.format(curr),)
     try:
         while True:
             save.write(res.read(PixivConstant.BUFFER_SIZE))
@@ -590,12 +624,12 @@ def downloadImage(url, filename, res, file_size, overwrite):
             # check if downloaded file is complete
             if file_size > 0 and curr == file_size:
                 total_time = (datetime.now() - start_time).total_seconds()
-                print u'\n Completed in {0}s ({1})'.format(total_time, speedInStr(file_size, total_time))
+                print(u'\n Completed in {0}s ({1})'.format(total_time, speedInStr(file_size, total_time)))
                 return curr
 
             elif curr == prev:  # no file size info
                 total_time = (datetime.now() - start_time).total_seconds()
-                print u'\n Completed in {0}s ({1})'.format(total_time, speedInStr(curr, total_time))
+                print(u'\n Completed in {0}s ({1})'.format(total_time, speedInStr(curr, total_time)))
                 return curr
 
             prev = curr
@@ -637,13 +671,23 @@ def print_progress(curr, total):
 
     if total > 0:
         complete = (curr * 20) / total
-        print '\r',
+        if six.PY3:
+            print('\r', end='')
+        else:
+            print('\r',)
         msg = '[{0:20}] {1} of {2}'.format('|' * complete, sizeInStr(curr), sizeInStr(total))
-        print '{0:79}'.format(msg),
+        if six.PY3:
+            print('{0:79}'.format(msg), end='')
+        else:
+            print('{0:79}'.format(msg),)
     else:
         # indeterminite
-        print '\r',
-        print '{1:79}'.format(sizeInStr(curr)),
+        if six.PY3:
+            print('\r', end='')
+            print('{1:79}'.format(sizeInStr(curr)), end='')
+        else:
+            print('\r',)
+            print('{1:79}'.format(sizeInStr(curr)),)
 
 
 def generateSearchTagUrl(tags, page, title_caption, wild_card, oldest_first,
@@ -661,14 +705,14 @@ def generateSearchTagUrl(tags, page, title_caption, wild_card, oldest_first,
     else:
         if title_caption:
             url = 'https://www.pixiv.net/search.php?s_mode=s_tc&p=' + str(page) + '&word=' + tags + date_param
-            print u"Using Title Match (s_tc)"
+            print(u"Using Title Match (s_tc)")
         else:
             if wild_card:
                 url = 'https://www.pixiv.net/search.php?s_mode=s_tag&p=' + str(page) + '&word=' + tags + date_param
-                print u"Using Partial Match (s_tag)"
+                print(u"Using Partial Match (s_tag)")
             else:
                 url = 'https://www.pixiv.net/search.php?s_mode=s_tag_full&word=' + tags + '&p=' + str(page) + date_param
-                print u"Using Full Match (s_tag_full)"
+                print(u"Using Full Match (s_tag_full)")
 
     if r18mode:
         url = url + '&mode=r18'

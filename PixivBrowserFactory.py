@@ -1,24 +1,33 @@
 ﻿# -*- coding: utf-8 -*-
 # pylint: disable=I0011, C, C0302
 
-import mechanize
-from BeautifulSoup import BeautifulSoup
-import cookielib
 import socket
 import socks
-import urlparse
 import urllib
-import urllib2
-import httplib
 import time
 import sys
 import json
 import re
 
+import six
+
+from six.moves import http_cookiejar as cookielib, http_client as httplib
+from six.moves.urllib import parse as urlparse, request as urllib2
+if six.PY3:
+    from mechanicalsoup import StatefulBrowser as MechanizeBrowser
+else:
+    import mechanize
+    MechanizeBrowser = mechanize.Browser
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    from BeautifulSoup import BeautifulSoup
+
 import PixivHelper
 from PixivException import PixivException
 import PixivModelWhiteCube
 import PixivModel
+
 
 defaultCookieJar = None
 defaultConfig = None
@@ -26,7 +35,7 @@ _browser = None
 
 
 # pylint: disable=E1101
-class PixivBrowser(mechanize.Browser):
+class PixivBrowser(MechanizeBrowser):
     _config = None
     _isWhitecube = False
     _whitecubeToken = ""
@@ -126,9 +135,12 @@ class PixivBrowser(mechanize.Browser):
 
                 if retry_count < self._config.retry:
                     for t in range(1, self._config.retryWait):
-                        print t,
+                        if six.PY3:
+                            print(t, end='')
+                        else:
+                            print(t,)
                         time.sleep(1)
-                    print ''
+                    print('')
                     retry_count = retry_count + 1
                 else:
                     raise PixivException("Failed to get page: " + ex.message, errorCode=PixivException.SERVER_ERROR)
@@ -255,13 +267,13 @@ class PixivBrowser(mechanize.Browser):
 
     def detectWhiteCube(self, page, url):
         if url.find("pixiv.net/whitecube") > 0:
-            print "*******************************************"
-            print "* Pixiv whitecube UI mode.                *"
-            print "* Some feature might not working properly *"
-            print "*******************************************"
+            print("*******************************************")
+            print("* Pixiv whitecube UI mode.                *")
+            print("* Some feature might not working properly *")
+            print("*******************************************")
             js_init = self._getInitConfig(page)
             self._whitecubeToken = js_init["pixiv.context.token"]
-            print "whitecube token:", self._whitecubeToken
+            print("whitecube token:", self._whitecubeToken)
             self._isWhitecube = True
 
     def parseLoginError(self, res):
@@ -544,7 +556,7 @@ def test():
 
     if success:
         def testSearchTags():
-            print "test search tags"
+            print("test search tags")
             tags = "VOCALOID"
             p = 1
             wild_card = True
@@ -566,75 +578,75 @@ def test():
             assert(len(resultS.itemList) > 0)
 
         def testImage():
-            print "test image mode"
-            print ">>"
+            print("test image mode")
+            print(">>")
             (result, page) = b.getImagePage(60040975)
-            print result.PrintInfo()
+            print(result.PrintInfo())
             assert(len(result.imageTitle) > 0)
-            print result.artist.PrintInfo()
+            print(result.artist.PrintInfo())
             assert(len(result.artist.artistToken) > 0)
             assert(not("R-18" in result.imageTags))
             assert(result.worksTools.find("CLIP STUDIO PAINT") > -1)
 
-            print ">>"
+            print(">>")
             (result2, page2) = b.getImagePage(59628358)
-            print result2.PrintInfo()
+            print(result2.PrintInfo())
             assert(len(result2.imageTitle) > 0)
-            print result2.artist.PrintInfo()
+            print(result2.artist.PrintInfo())
             assert(len(result2.artist.artistToken) > 0)
             assert("R-18" in result2.imageTags)
 
-            print ">> ugoira"
+            print(">> ugoira")
             (result3, page3) = b.getImagePage(60070169)
-            print result3.PrintInfo()
+            print(result3.PrintInfo())
             assert(len(result3.imageTitle) > 0)
-            print result3.artist.PrintInfo()
-            print result3.ugoira_data
+            print(result3.artist.PrintInfo())
+            print(result3.ugoira_data)
             assert(len(result3.artist.artistToken) > 0)
             assert(result3.imageMode == 'ugoira_view')
 
         def testMember():
-            print "Test member mode"
-            print ">>"
+            print("Test member mode")
+            print(">>")
             (result3, page3) = b.getMemberPage(1227869, page=1, bookmark=False, tags=None)
-            print result3.PrintInfo()
+            print(result3.PrintInfo())
             assert(len(result3.artistToken) > 0)
             assert(len(result3.imageList) > 0)
-            print ">>"
+            print(">>")
             (result4, page4) = b.getMemberPage(1227869, page=2, bookmark=False, tags=None)
-            print result4.PrintInfo()
+            print(result4.PrintInfo())
             assert(len(result4.artistToken) > 0)
             assert(len(result4.imageList) > 0)
-            print ">>"
+            print(">>")
             (result5, page5) = b.getMemberPage(4894, page=1, bookmark=False, tags=None)
-            print result5.PrintInfo()
+            print(result5.PrintInfo())
             assert(len(result5.artistToken) > 0)
             assert(len(result5.imageList) > 0)
-            print ">>"
+            print(">>")
             (result6, page6) = b.getMemberPage(4894, page=3, bookmark=False, tags=None)
-            print result6.PrintInfo()
+            print(result6.PrintInfo())
             assert(len(result6.artistToken) > 0)
             assert(len(result6.imageList) > 0)
 
         def testMemberBookmark():
-            print "Test member bookmarks mode"
-            print ">>"
+            print("Test member bookmarks mode")
+            print(">>")
             (result5, page5) = b.getMemberPage(1227869, page=1, bookmark=True, tags=None)
-            print result5.PrintInfo()
+            print(result5.PrintInfo())
             assert(len(result5.artistToken) > 0)
             assert(len(result5.imageList) > 0)
-            print ">>"
+            print(">>")
             (result6, page6) = b.getMemberPage(1227869, page=2, bookmark=True, tags=None)
-            print result6.PrintInfo()
+            print(result6.PrintInfo())
             assert(len(result6.artistToken) > 0)
             assert(len(result6.imageList) > 0)
-            print ">>"
+            print(">>")
             (result6, page6) = b.getMemberPage(1227869, page=10, bookmark=True, tags=None)
             if result6 is not None:
-                print result6.PrintInfo()
+                print(result6.PrintInfo())
             (result6, page6) = b.getMemberPage(1227869, page=12, bookmark=True, tags=None)
             if result6 is not None:
-                print result6.PrintInfo()
+                print(result6.PrintInfo())
                 assert(len(result6.artistToken) > 0)
                 assert(len(result6.imageList) == 0)
 
@@ -644,9 +656,9 @@ def test():
         # testMemberBookmark()
 
     else:
-        print "Invalid username or password"
+        print("Invalid username or password")
 
 
 if __name__ == '__main__':
     test()
-    print "done"
+    print("done")
