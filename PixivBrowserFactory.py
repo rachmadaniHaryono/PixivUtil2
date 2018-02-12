@@ -10,10 +10,11 @@ import sys
 import json
 import re
 
-import six
-
 from six.moves import http_cookiejar as cookielib, http_client as httplib
 from six.moves.urllib import parse as urlparse, request as urllib2
+from six.moves.urllib.parse import urlencode
+import requests
+import six
 if six.PY3:
     from mechanicalsoup import StatefulBrowser as MechanizeBrowser
 else:
@@ -29,6 +30,8 @@ from PixivException import PixivException
 import PixivModelWhiteCube
 import PixivModel
 
+
+unicode = six.u
 
 defaultCookieJar = None
 defaultConfig = None
@@ -204,10 +207,19 @@ class PixivBrowser(MechanizeBrowser):
             PixivHelper.print_and_log('info', 'Trying to log in with saved cookie')
             self._loadCookie(login_cookie)
             res = self.open('https://www.pixiv.net/mypage.php')
-            resData = res.read()
+            if isinstance(res, requests.models.Response):
+                resData = res.text
+                resUrl = res.url
+            else:
+                resData = res.read()
+                resUrl = res.geturl()
 
-            parsed = BeautifulSoup(resData)
-            self.detectWhiteCube(parsed, res.geturl())
+            try:
+                parsed = BeautifulSoup(resData, 'lxml')
+            except Exception as e:
+                PixivHelper.print_and_log('debug', 'Fail to use lxml, use html.parser')
+                parsed = BeautifulSoup(resData, 'html.parser')
+            self.detectWhiteCube(parsed, resUrl)
 
             if "logout.php" in resData:
                 PixivHelper.print_and_log('info', 'Login successful.')
@@ -226,7 +238,13 @@ class PixivBrowser(MechanizeBrowser):
             page = self.open(url)
 
             # get the post key
-            parsed = BeautifulSoup(page)
+            if isinstance(page, requests.models.Response):
+                page = page.text
+            try:
+                parsed = BeautifulSoup(page, 'lxml')
+            except Exception as e:
+                PixivHelper.print_and_log('debug', 'Fail to use lxml, use default')
+                parsed = BeautifulSoup(page)
             js_init_config = self._getInitConfig(parsed)
 
             data = {}
@@ -240,8 +258,11 @@ class PixivBrowser(MechanizeBrowser):
             data['source'] = "accounts"
             data['ref'] = ''
 
-            request = urllib2.Request("https://accounts.pixiv.net/api/login?lang=en", urllib.urlencode(data))
-            response = self.open(request)
+            if six.PY3:
+                response = self.open("https://accounts.pixiv.net/api/login?lang=en", data=data)
+            else:
+                request = urllib2.Request("https://accounts.pixiv.net/api/login?lang=en", urlencode(data))
+                response = self.open(request)
 
             return self.processLoginResult(response)
         except BaseException:
@@ -249,14 +270,30 @@ class PixivBrowser(MechanizeBrowser):
             raise
 
     def processLoginResult(self, response):
-        PixivHelper.GetLogger().info('Logging in, return url: ' + response.geturl())
+        if six.PY3:
+            PixivHelper.GetLogger().info('Logging in, return url: ' + response.url)
+            js = response.text
+            PixivHelper.GetLogger().info(str(js))
 
-        # check the returned json
-        js = response.read()
-        PixivHelper.GetLogger().info(str(js))
-        result = json.loads(js)
+            try:
+                result = json.loads(js)
+            except json.JSONDecodeError as e:
+                PixivHelper.GetLogger().debug('JSONDecodeError, return empty obj.')
+                result = {'body': None}
+        else:
+            PixivHelper.GetLogger().info('Logging in, return url: ' + response.geturl())
+            # check the returned json
+            js = response.read()
+            PixivHelper.GetLogger().info(str(js))
+            result = json.loads(js)
         # Fix Issue #181
-        if result["body"] is not None and result["body"].has_key("success"):
+        body_has_succes_key = False
+        if result['body']:
+            if six.PY2:
+                body_has_succes_key = result['body'].has_key('success')  # NOQA
+            else:
+                body_has_succes_key = 'success' in result['body']  # NOQA
+        if result["body"] is not None and body_has_succes_key:
             for cookie in self._ua_handlers['_cookies'].cookiejar:
                 if cookie.name == 'PHPSESSID':
                     PixivHelper.print_and_log('info', 'new cookie value: ' + str(cookie.value))
@@ -282,8 +319,11 @@ class PixivBrowser(MechanizeBrowser):
     def getMyId(self, parsed):
         ''' Assume from main page '''
         # pixiv.user.id = "189816";
-        temp = re.findall("pixiv.user.id = \"(\d+)\";", unicode(parsed))
-        if temp is not None:
+        parsed_unicode = unicode(parsed)
+        if isinstance(parsed_unicode, BeautifulSoup):
+            parsed_unicode = str(parsed_unicode)
+        temp = re.findall("pixiv.user.id = \"(\d+)\";", parsed_unicode)
+        if temp is not None and temp:
             self._myId = int(temp[0])
             PixivHelper.print_and_log('info', 'My User Id: {0}.'.format(self._myId))
         else:
