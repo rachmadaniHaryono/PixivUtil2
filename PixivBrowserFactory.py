@@ -44,11 +44,15 @@ class PixivBrowser(MechanizeBrowser):
 
     def __init__(self, config, cookie_jar):
         # fix #218
-        try:
-            mechanize.Browser.__init__(self, factory=mechanize.RobustFactory())
-        except BaseException:
-            PixivHelper.GetLogger().info("Using default factory (mechanize 3.x ?)")
-            mechanize.Browser.__init__(self)
+        if six.PY2:
+            try:
+                mechanize.Browser.__init__(self, factory=mechanize.RobustFactory())
+            except BaseException:
+                PixivHelper.GetLogger().info("Using default factory (mechanize 3.x ?)")
+                mechanize.Browser.__init__(self)
+        else:
+            PixivHelper.GetLogger().info("Using MechanicalSoup")
+            MechanizeBrowser.__init__(self)
 
         self._configureBrowser(config)
         self._configureCookie(cookie_jar)
@@ -81,11 +85,12 @@ class PixivBrowser(MechanizeBrowser):
 
         # self.set_handle_equiv(True)
         # self.set_handle_gzip(True)
-        self.set_handle_redirect(True)
-        self.set_handle_referer(True)
-        self.set_handle_robots(False)
+        if six.PY2:
+            self.set_handle_redirect(True)
+            self.set_handle_referer(True)
+            self.set_handle_robots(False)
 
-        self.set_debug_http(config.debugHttp)
+            self.set_debug_http(config.debugHttp)
         if config.debugHttp:
             PixivHelper.GetLogger().info('Debug HTTP enabled.')
 
