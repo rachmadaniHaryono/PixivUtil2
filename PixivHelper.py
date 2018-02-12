@@ -119,7 +119,7 @@ def sanitizeFilename(s, rootDir=None):
         name = name[:newLen]
 
     # Remove unicode control character
-    if isinstance(name, unicode):
+    if isinstance(name, six.text_type):
         tempName = ""
         for c in name:
             if unicodedata.category(c) == 'Cc':
@@ -624,7 +624,9 @@ def downloadImage(url, filename, res, file_size, overwrite):
         while True:
             save.write(res.read(PixivConstant.BUFFER_SIZE))
             curr = save.tell()
-            print_progress(curr, file_size)
+            # TODO print progress for python3
+            if six.PY2:
+                print_progress(curr, file_size)
 
             # check if downloaded file is complete
             if file_size > 0 and curr == file_size:
