@@ -16,8 +16,69 @@ from datetime import datetime
 import json
 
 from six.moves.urllib import parse as urlparse
+from six.moves.urllib.parse import unquote_plus
 import six
 unicode = six.u
+
+def parse_tag_alt(tag):
+    TODO: match with upstream/master branch
+    if six.PY2:
+        tag_has_key_class = tag.has_key('class')  # NOQA
+    else:
+        tag_has_key_class = tag.has_attr('class')
+    if tag_has_key_class:
+        class_startswith_text = False
+        try:
+            class_startswith_text = tag['class'].startswith('text js-click-trackable')
+        except AttributeError:
+            PixivHelper.GetLogger().debug('AttributeError, try alternative method')
+            if tag['class'] == ['portal'] and tag.get('href', '').startswith('/tags.php?tag='):
+                # example:
+                # <a class="portal" href="/tags.php?tag=%E6%BC%AB%E7%94%BB">c</a>
+                temp_tag = unquote_plus(tag.get('href', '').split('/tags.php?tag=', 1)[1])
+                self.imageTags.append(unicode(temp_tag))
+            elif tag['class'] == ['text'] and tag.get('href', '').startswith('/search.php?s_mode=s_tag_full&'):
+                # example:
+                # <a class="text" href="/search.php?s_mode=s_tag_full&amp;word=%E6%BC%AB%E7%94%BB">漫画</a>
+                temp_tag = tag.text
+                self.imageTags.append(unicode(temp_tag))
+            elif tag['class'] in (['icon-pixpedia', '_ui-tooltip'], ['_ui-tooltip'], ['icon-pixpedia-no-item', '_ui-tooltip']):
+                # example:
+                # <a class="icon-pixpedia _ui-tooltip"
+                # datactooltip="Articles about 「漫画」  "
+                # href="https://dic.pixiv.net/a/%E6%BC%AB%E7%94%BB" target="_blank"></a>
+                # example:
+                # <a class="_ui-tooltip" data-tooltip="Merchandise of 漫画"
+                # href="https://booth.pm/ja/search/%E6%BC%AB%E7%94%BB?utm_source=pixiv&amp;utm_medium=work-tag&amp;utm_content=work-item&amp;utm_campaign=pixiv-worktag-loggedin"
+                # target="_blank"><i class="_icon sprites-icon-booth-tag"></i></a>
+                # example:
+                # <a class="icon-pixpedia-no-item _ui-tooltip"
+                # data-tooltip="Create an article related to マジレス君"
+                # href="https://dic.pixiv.net/a/%E3%83%9E%E3%82%B8%E3%83%AC%E3%82%B9%E5%90%9B"
+                # target="_blank"></a>
+                pass
+            else:
+                print('Unknown tag format: {}'.format(tag))
+        if tag['class'] == 'text' and tag.string is not None:
+            self.imageTags.append(unicode(tag.string))
+        elif class_startswith_text and tag.string is not None:
+            self.imageTags.append(unicode(tag.string))
+        elif tag['class'].startswith('text js-click-trackable-later'):
+            # Issue#343
+            # no translation for tags
+            if tag.string is not None:
+                self.imageTags.append(unicode(tag.string))
+            else:
+                # with translation
+                # print(tag.contents)
+                # print(unicode(tag.contents[0]))
+                self.imageTags.append(unicode(tag.contents[0]))
+        elif tag['class'] == 'text js-click-trackable':
+            # issue #200 fix
+            # need to split the tag 'incrediblycute <> なにこれかわいい'
+            # and take the 2nd tags
+            temp_tag = tag['data-click-action'].split('<>', 1)[1].strip()
+            self.imageTags.append(unicode(temp_tag))
 
 
 class PixivArtist:
@@ -404,7 +465,7 @@ class PixivImage:
             else:
                 self.imageCaption = ''
                 for line in tempCaption.contents:
-                    if str(line) == '<br />':
+                    if str(line) in ['<br />', '<br/>']:
                         self.imageCaption += (os.linesep)
                     else:
                         self.imageCaption += (unicode(line))

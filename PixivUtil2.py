@@ -24,6 +24,7 @@ import subprocess
 
 from six.moves.http_client import BadStatusLine
 from six.moves.urllib.error import HTTPError, URLError
+from six.moves.urllib.request import urlopen
 
 try:
     from BeautifulSoup import BeautifulSoup
@@ -119,13 +120,17 @@ def get_remote_filesize(url, referer):
     print('Getting remote filesize...')
     # open with HEAD method, might be expensive
     req = PixivHelper.create_custom_request(url, __config__, referer, head=True)
-    res = __br__.open_novisit(req)
+    if six.PY2:
+        res = __br__.open_novisit(req)
 
-    try:
-        file_size = int(res.info()['Content-Length'])
-    except KeyError:
+        try:
+            file_size = int(res.info()['Content-Length'])
+        except KeyError:
+            file_size = -1
+            PixivHelper.print_and_log('info', "\tNo file size information!")
+    else:
         file_size = -1
-        PixivHelper.print_and_log('info', "\tNo file size information!")
+        PixivHelper.print_and_log('debug', "\tNo method to check file size (python3)")
     print("Remote filesize = {0} ({1} Bytes)".format(PixivHelper.sizeInStr(file_size), file_size))
     return file_size
 
@@ -237,13 +242,19 @@ def download_image(url, filename, referer, overwrite, max_retry, backup_old_file
                 # actual download
                 print('\rStart downloading...', end=' ')
                 req = PixivHelper.create_custom_request(url, __config__, referer)
-                res = __br__.open_novisit(req)
-                if file_size < 0:
-                    try:
-                        file_size = int(res.info()['Content-Length'])
-                    except KeyError:
-                        file_size = -1
-                        PixivHelper.print_and_log('info', "\tNo file size information!")
+                if six.PY2:
+                    res = __br__.open_novisit(req)
+                    if file_size < 0:
+                        try:
+                            file_size = int(res.info()['Content-Length'])
+                        except KeyError:
+                            file_size = -1
+                            PixivHelper.print_and_log('info', "\tNo file size information!")
+                else:
+                    file_size = -1
+                    PixivHelper.print_and_log('debug', "\tNo method to check file size (python3)")
+                    res = urlopen(req)
+                    # TODO get response similar to result from open_novisit method
                 (downloadedSize, filename) = PixivHelper.downloadImage(url, filename, res, file_size, overwrite)
 
                 # check the downloaded file size again

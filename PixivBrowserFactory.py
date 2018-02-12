@@ -13,6 +13,7 @@ import re
 from six.moves import http_cookiejar as cookielib, http_client as httplib
 from six.moves.urllib import parse as urlparse, request as urllib2
 from six.moves.urllib.parse import urlencode
+from six.moves.urllib.error import HTTPError
 import requests
 import six
 if six.PY3:
@@ -152,14 +153,23 @@ class PixivBrowser(MechanizeBrowser):
             req = urllib2.Request(url)
             req.add_header('Referer', referer)
             try:
-                page = self.open(req)
-                if returnParsed:
-                    parsedPage = BeautifulSoup(page.read())
-                    return parsedPage
+                if six.PY3:
+                    page = self.open(url, headers={'Referer': referer})
+                    if returnParsed:
+                        parsedPage = BeautifulSoup(page.text)
+                        return parsedPage
+                    else:
+                        return page
+                    page = page.text
                 else:
-                    return page
+                    page = self.open(req)
+                    if returnParsed:
+                        parsedPage = BeautifulSoup(page.read())
+                        return parsedPage
+                    else:
+                        return page
             except Exception as ex:
-                if isinstance(ex, urllib2.HTTPError):
+                if isinstance(ex, HTTPError):
                     if ex.code in [403, 404, 503]:
                         return BeautifulSoup(ex.read())
 
@@ -371,10 +381,17 @@ class PixivBrowser(MechanizeBrowser):
         else:
             url = "https://www.pixiv.net/member_illust.php?mode=medium&illust_id={0}".format(image_id)
             # response = self.open(url).read()
-            response = self.getPixivPage(url, returnParsed=False).read()
+            if six.PY3:
+                response = self.getPixivPage(url, returnParsed=False).text
+            else:
+                response = self.getPixivPage(url, returnParsed=False).read()
             self.handleDebugMediumPage(response, image_id)
 
-            parsed = BeautifulSoup(response)
+            try:
+                parsed = BeautifulSoup(response, 'lxml')
+            except Exception as e:
+                PixivHelper.print_and_log('debug', 'Fail to use lxml, use default')
+                parsed = BeautifulSoup(response)
             image = PixivModel.PixivImage(image_id,
                                           parsed,
                                           parent,
