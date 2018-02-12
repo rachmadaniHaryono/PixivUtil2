@@ -2,24 +2,33 @@
 # pylint: disable=I0011, C, C0302
 from __future__ import print_function
 
-import mechanize
-from BeautifulSoup import BeautifulSoup
-import cookielib
 import socket
 import socks
-import urlparse
 import urllib
-import urllib2
-import httplib
 import time
 import sys
 import json
 import re
 
+import six
+
+from six.moves import http_cookiejar as cookielib, http_client as httplib
+from six.moves.urllib import parse as urlparse, request as urllib2
+if six.PY3:
+    from mechanicalsoup import StatefulBrowser as MechanizeBrowser
+else:
+    import mechanize
+    MechanizeBrowser = mechanize.Browser
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    from BeautifulSoup import BeautifulSoup
+
 import PixivHelper
 from PixivException import PixivException
 import PixivModelWhiteCube
 import PixivModel
+
 
 defaultCookieJar = None
 defaultConfig = None
@@ -27,7 +36,7 @@ _browser = None
 
 
 # pylint: disable=E1101
-class PixivBrowser(mechanize.Browser):
+class PixivBrowser(MechanizeBrowser):
     _config = None
     _isWhitecube = False
     _whitecubeToken = ""

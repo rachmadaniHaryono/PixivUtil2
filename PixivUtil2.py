@@ -4,8 +4,13 @@
 from __future__ import print_function
 
 import sys
-reload(sys)
-sys.setdefaultencoding("utf-8")
+
+from six.moves import reload_module as reload  # to fix F821: undefined name 'reload'
+import six
+
+if six.PY2:
+    reload(sys)
+    sys.setdefaultencoding("utf-8")
 
 import os
 import re
@@ -13,13 +18,20 @@ import traceback
 import gc
 import time
 import datetime
-import urllib2
 import getpass
-import httplib
 import codecs
 import subprocess
 
-from BeautifulSoup import BeautifulSoup
+from six.moves.http_client import BadStatusLine
+from six.moves.urllib.error import HTTPError, URLError
+
+try:
+    from BeautifulSoup import BeautifulSoup
+except ImportError:
+    from bs4 import BeautifulSoup
+
+
+raw_input = six.moves.input
 
 if os.name == 'nt':
     # enable unicode support on windows console.
@@ -27,7 +39,7 @@ if os.name == 'nt':
 
     # monkey patch for #305
     from ctypes import byref, c_ulong
-    from win_unicode_console.streams import set_last_error, ERROR_SUCCESS, ReadConsoleW, get_last_error, ERROR_OPERATION_ABORTED, ERROR_SUCCESS, WinError
+    from win_unicode_console.streams import set_last_error, ERROR_SUCCESS, ReadConsoleW, get_last_error, ERROR_OPERATION_ABORTED, WinError
     from win_unicode_console.buffer import get_buffer
     EOF = b"\x1a\x00"
 
@@ -62,7 +74,7 @@ import PixivConstant
 import PixivConfig
 import PixivDBManager
 import PixivHelper
-from PixivModel import PixivArtist, PixivImage, PixivListItem, PixivBookmark, PixivTags
+from PixivModel import PixivImage, PixivListItem, PixivBookmark, PixivTags
 from PixivModel import PixivNewIllustBookmark, PixivGroup
 from PixivException import PixivException
 import PixivBrowserFactory
@@ -82,9 +94,10 @@ ERROR_CODE = 0
 gc.enable()
 # gc.set_debug(gc.DEBUG_LEAK)
 
-import mechanize
-# replace unenscape_charref implementation with our implementation due to bug.
-mechanize._html.unescape_charref = PixivHelper.unescape_charref
+if six.PY2:
+    import mechanize
+    # replace unenscape_charref implementation with our implementation due to bug.
+    mechanize._html.unescape_charref = PixivHelper.unescape_charref
 
 __config__ = PixivConfig.PixivConfig()
 configfile = "config.ini"
@@ -279,13 +292,13 @@ def download_image(url, filename, referer, overwrite, max_retry, backup_old_file
 
                 return (PixivConstant.PIXIVUTIL_OK, filename)
 
-            except urllib2.HTTPError as httpError:
+            except HTTPError as httpError:
                 PixivHelper.print_and_log('error', '[download_image()] HTTP Error: {0} at {1}'.format(str(httpError), url))
                 if httpError.code == 404 or httpError.code == 502:
                     return (PixivConstant.PIXIVUTIL_NOT_OK, None)
                 temp_error_code = PixivException.DOWNLOAD_FAILED_NETWORK
                 raise
-            except urllib2.URLError as urlError:
+            except URLError as urlError:
                 PixivHelper.print_and_log('error', '[download_image()] URL Error: {0} at {1}'.format(str(urlError), url))
                 temp_error_code = PixivException.DOWNLOAD_FAILED_NETWORK
                 raise
@@ -768,8 +781,7 @@ def process_image(artist=None, image_id=None, user_dir='', bookmark=False, searc
 
                         manga_files[page] = filename
                         page = page + 1
-
-                    except urllib2.URLError:
+                    except URLError:
                         PixivHelper.print_and_log('error', 'Giving up url: ' + str(img))
                         __log__.exception('Error when download_image(): ' + str(img))
                     print('')
@@ -932,7 +944,7 @@ def process_tags(tags, page=1, end_page=0, wild_card=True, title_caption=False,
                         except KeyboardInterrupt:
                             result = PixivConstant.PIXIVUTIL_KEYBOARD_INTERRUPT
                             break
-                        except httplib.BadStatusLine:
+                        except BadStatusLine:
                             print("Stuff happened, trying again after 2 second...")
                             time.sleep(2)
 
@@ -1847,7 +1859,7 @@ def main_loop(ewd, op_is_valid, selection, np_is_valid, args):
             elif selection == '-all':
                 if not np_is_valid:
                     np_is_valid = True
-                    np = 0
+                    np = 0  # NOQA
                     print('download all mode activated')
                 else:
                     np_is_valid = False

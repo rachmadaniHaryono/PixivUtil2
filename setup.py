@@ -1,10 +1,11 @@
-#!/c/Python27/python.exe
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 from __future__ import print_function
 
-from os import path
 import os
 import sys
+from os import path
+
 try:
     from setuptools import setup, convert_path, find_packages
     SETUPTOOLS_USED = True
@@ -70,6 +71,18 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'requirements.txt')) as f:
     install_requires = f.read().split('\n')
 install_requires = [x.strip() for x in install_requires]
+if ranWithPy3:
+    install_requires = [
+        'beautifulsoup4>=4.6.0',
+        'imageio>=2.1.2',
+        'numpy>=1.12.1',
+        'Pillow>=4.3.0',
+        'socksipy-branch>=1.01',
+        'win_unicode_console>=0.5',
+        # python3&linux only
+        'MechanicalSoup>=0.10.0',
+        'six>=1.11.0',
+    ]
 # get program version
 main_ns = {}
 ver_path = convert_path('PixivConstant.py')

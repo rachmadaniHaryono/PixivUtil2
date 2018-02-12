@@ -9,9 +9,14 @@ import os
 import codecs
 from datetime import datetime
 
+import six
+
 from PixivModel import PixivListItem
 import PixivConfig
 import PixivHelper
+
+unicode = six.u
+raw_input = six.moves.input
 script_path = PixivHelper.module_path()
 
 
@@ -222,9 +227,7 @@ class PixivDBManager:
             c.execute('''SELECT * FROM pixiv_master_member
                          WHERE is_deleted = ?
                             ORDER BY member_id''', (int(isDeleted), ))
-            print('%10s %25s %25s %20s %20s %10s %s' % ('member_id', 'name',
-                'save_folder', 'created_date', 'last_update_date', 'last_image',
-                'is_deleted'))
+            print('%10s %25s %25s %20s %20s %10s %s' % ('member_id', 'name', 'save_folder', 'created_date', 'last_update_date', 'last_image', 'is_deleted'))
             i = 0
             for row in c:
                 PixivHelper.safePrint('%10d %#25s %#25s %20s %20s %10d %5s' % (row[0], unicode(row[1]).strip(), row[2], row[3], row[4], row[5], row[6]))

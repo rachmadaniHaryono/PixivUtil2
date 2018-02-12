@@ -5,7 +5,10 @@ from __future__ import print_function
 import re
 import json
 from collections import OrderedDict
-from BeautifulSoup import BeautifulSoup
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    from BeautifulSoup import BeautifulSoup
 
 import PixivModel
 from PixivModel import PixivException

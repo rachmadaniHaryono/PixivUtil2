@@ -5,7 +5,6 @@ from __future__ import print_function
 import re
 import os
 import codecs
-from HTMLParser import HTMLParser
 import subprocess
 import sys
 import PixivModel
@@ -16,7 +15,6 @@ import zipfile
 import time
 import unicodedata
 import json
-import urllib2
 import imageio
 import shutil
 import tempfile
@@ -25,6 +23,16 @@ import traceback
 import urllib
 from apng import APNG
 import shlex
+
+import six
+from six.moves.html_parser import HTMLParser
+from six.moves.urllib import request as urllib2
+
+
+if six.PY3:
+    raw_input = input
+    unicode = six.u
+    file = open  # linter fix
 
 Logger = None
 _config = None
@@ -317,7 +325,7 @@ def OpenTextFile(filename, mode='r', encoding='utf-8'):
 
 
 def toUnicode(obj, encoding='utf-8'):
-    if isinstance(obj, basestring):
+    if isinstance(obj, six.string_types):
         if not isinstance(obj, unicode):
             obj = unicode(obj, encoding)
     return obj
@@ -368,9 +376,13 @@ def module_path():
     """ This will get us the program's directory,
   even if we are frozen using py2exe"""
 
+    if we_are_frozen() and six.PY3:
+        return os.path.dirname(unicode(sys.executable))
     if we_are_frozen():
         return os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
 
+    if six.PY3:
+        return os.path.dirname(unicode(__file__))
     return os.path.dirname(unicode(__file__, sys.getfilesystemencoding()))
 
 
@@ -422,9 +434,13 @@ def dumpHtml(filename, html):
 
     if isDumpEnabled:
         try:
-            dump = file(filename, 'wb')
-            dump.write(str(html))
-            dump.close()
+            if six.PY3:
+                with open(filename, 'wb') as dump:
+                    dump.write(str(html))
+            else:
+                dump = file(filename, 'wb')
+                dump.write(str(html))
+                dump.close()
             return filename
         except Exception as ex:
             print_and_log('error', ex.message)
@@ -482,10 +498,10 @@ def unescape_charref(data, encoding):
         if name.lower().startswith("x"):
             name, base = name[1:], 16
         try:
-            result = int(name, base)
+            result = int(name, base)  # NOQA
         except BaseException:
             base = 16
-        uc = unichr(int(name, base))
+        uc = six.unichr(int(name, base))
         if encoding is None:
             return uc
         else:
@@ -569,7 +585,10 @@ def downloadImage(url, filename, res, file_size, overwrite):
         if not os.path.exists(directory):
             print_and_log('info', u'Creating directory: ' + directory)
             os.makedirs(directory)
-        save = file(filename + '.pixiv', 'wb+', 4096)
+        if six.PY3:
+            save = open(filename + '.pixiv', 'wb+', 4096)
+        else:
+            save = file(filename + '.pixiv', 'wb+', 4096)
     except IOError:
         print_and_log('error', u"Error at download_image(): Cannot save {0} to {1}: {2}".format(url, filename, sys.exc_info()))
 
@@ -577,7 +596,10 @@ def downloadImage(url, filename, res, file_size, overwrite):
         filename = os.path.split(url)[1]
         filename = filename.split("?")[0]
         filename = sanitizeFilename(filename)
-        save = file(filename + '.pixiv', 'wb+', 4096)
+        if six.PY3:
+            save = open(filename + '.pixiv', 'wb+', 4096)
+        else:
+            save = file(filename + '.pixiv', 'wb+', 4096)
         print_and_log('info', u'File is saved to ' + filename)
 
     # download the file
