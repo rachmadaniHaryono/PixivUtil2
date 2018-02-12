@@ -31,9 +31,6 @@ from six.moves.urllib import request as urllib2
 raw_input = six.moves.input
 unicode = six.u
 
-raw_input = six.moves.input
-unicode = six.u
-
 if six.PY3:
     file = open  # linter fix
 
