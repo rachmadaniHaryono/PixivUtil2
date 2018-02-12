@@ -1,0 +1,12 @@
+{% extends 'admin/base.html' %}
+{% block head %}
+{{super()}}
+<link rel="shortcut icon" href="#" />
+{% endblock %}
+{% block body %}
+<form method="GET" action="/">
+  <div class="form-group"> {{ form.url.label }} {{ form.url(size=20, class_="form-control") }} </div>
+  <div class="form-group"> {{ form.image_ids.label }} {{ form.image_ids(size=20, class_="form-control") }} </div>
+  <button type="submit" class="btn btn-default">Submit</button>
+</form>
+{% endblock %}
