@@ -28,10 +28,10 @@ import six
 from six.moves.html_parser import HTMLParser
 from six.moves.urllib import request as urllib2
 
+raw_input = six.moves.input
+unicode = six.u
 
 if six.PY3:
-    raw_input = input
-    unicode = six.u
     file = open  # linter fix
 
 Logger = None
@@ -253,6 +253,11 @@ def makeFilename(nameFormat, imageInfo, artistInfo=None, tagsSeparator=' ', tags
 
 def safePrint(msg, newline=True):
     """Print empty string if UnicodeError raised."""
+    if six.PY3:  # print normal on python3
+        print(msg)
+        if newline:
+            print('')
+        return
     for msgToken in msg.split(' '):
         try:
             print(msgToken, end=' ')
@@ -326,7 +331,7 @@ def OpenTextFile(filename, mode='r', encoding='utf-8'):
 
 def toUnicode(obj, encoding='utf-8'):
     if isinstance(obj, six.string_types):
-        if not isinstance(obj, unicode):
+        if not isinstance(obj, six.text_type):
             obj = unicode(obj, encoding)
     return obj
 
