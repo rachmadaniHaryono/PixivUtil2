@@ -28,6 +28,7 @@ import six
 from six.moves.html_parser import HTMLParser
 from six.moves.urllib import request as urllib2
 
+
 raw_input = six.moves.input
 unicode = six.u
 

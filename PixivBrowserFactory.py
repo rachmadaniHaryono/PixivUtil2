@@ -63,6 +63,34 @@ try:
 except ImportError:
     from BeautifulSoup import BeautifulSoup
 
+import six
+
+from six.moves import http_cookiejar as cookielib, http_client as httplib
+from six.moves.urllib import parse as urlparse, request as urllib2
+if six.PY3:
+    from mechanicalsoup import StatefulBrowser as MechanizeBrowser
+else:
+    import mechanize
+    MechanizeBrowser = mechanize.Browser
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    from BeautifulSoup import BeautifulSoup
+
+import six
+
+from six.moves import http_cookiejar as cookielib, http_client as httplib
+from six.moves.urllib import parse as urlparse, request as urllib2
+if six.PY3:
+    from mechanicalsoup import StatefulBrowser as MechanizeBrowser
+else:
+    import mechanize
+    MechanizeBrowser = mechanize.Browser
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    from BeautifulSoup import BeautifulSoup
+
 import PixivHelper
 from PixivException import PixivException
 import PixivModelWhiteCube
