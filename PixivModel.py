@@ -18,6 +18,7 @@ import json
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib.parse import unquote_plus
 import six
+import bs4
 unicode = six.u
 
 def parse_tag_alt(tag):
@@ -468,7 +469,13 @@ class PixivImage:
                     if str(line) in ['<br />', '<br/>']:
                         self.imageCaption += (os.linesep)
                     else:
-                        self.imageCaption += (unicode(line))
+                        try:
+                            self.imageCaption += (unicode(line))
+                        except TypeError as e:
+                            if isinstance(line, bs4.element.Tag):
+                                self.imageCaption += (unicode(line.text))
+                            else:
+                                raise e
 
         # stats
         view_count = page.find(attrs={'class': 'view-count'})
