@@ -12,6 +12,10 @@ from jinja2 import Markup
 
 
 from pixiv_util2 import forms, models
+import PixivUtil2
+import PixivDBManager
+import PixivHelper
+import PixivBrowserFactory
 
 
 log = structlog.getLogger(__name__)
@@ -31,13 +35,26 @@ class HomeView(AdminIndexView):
     def index(self):
         index_form = forms.AdminIndexForm(request.args)
         template_kwargs = {'form': index_form, 'entries': []}
-        image_ids = []
         if index_form.image_ids.data:
             template_kwargs['image_ids'] = [x.strip() for x in index_form.image_ids.data.split(',') if x.strip()]
         elif index_form.url.data:
             template_kwargs['image_ids'] = parse_qs(urlparse(index_form.url.data).query)['illust_id']
         else:
-            template_kwargs['image_ids'] = image_ids
+            template_kwargs['image_ids'] = []
+        if template_kwargs['image_ids']:
+            try:
+                PixivUtil2.__config__.loadConfig(path=PixivUtil2.configfile)
+                PixivHelper.setConfig(PixivUtil2.__config__)
+            except BaseException:
+                print('Failed to read configuration.')
+                log.exception('Failed to read configuration.')
+            if PixivUtil2.__br__ is None:
+                PixivUtil2.__br__ = PixivBrowserFactory.getBrowser(config=PixivUtil2.__config__)
+            PixivUtil2.__dbManager__ = PixivDBManager.PixivDBManager(
+                target=PixivUtil2.__config__.dbPath, config=PixivUtil2.__config__)
+            PixivUtil2.__dbManager__.createDatabase()
+            for image_id in template_kwargs['image_ids']:
+                PixivUtil2.process_image(None, int(image_id))
         log.debug('template kwargs', image_ids=template_kwargs['image_ids'])
         return self.render('pixiv_util2/admin_index.html', **template_kwargs)
 
