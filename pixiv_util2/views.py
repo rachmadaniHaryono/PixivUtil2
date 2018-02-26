@@ -53,6 +53,10 @@ class HomeView(AdminIndexView):
             PixivUtil2.__dbManager__ = PixivDBManager.PixivDBManager(
                 target=PixivUtil2.__config__.dbPath, config=PixivUtil2.__config__)
             PixivUtil2.__dbManager__.createDatabase()
+            username = PixivUtil2.__config__.username
+            password = PixivUtil2.__config__.password
+            PixivUtil2.doLogin(password, username)
+            PixivUtil2.start_iv = False
             for image_id in template_kwargs['image_ids']:
                 PixivUtil2.process_image(None, int(image_id))
         log.debug('template kwargs', image_ids=template_kwargs['image_ids'])
