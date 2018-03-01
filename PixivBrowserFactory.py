@@ -1,6 +1,6 @@
 ﻿# -*- coding: utf-8 -*-
 # pylint: disable=I0011, C, C0302
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
 import socket
 import socks
@@ -9,6 +9,7 @@ import time
 import sys
 import json
 import re
+import socket
 
 from six.moves import http_cookiejar as cookielib, http_client as httplib
 from six.moves.urllib import parse as urlparse, request as urllib2
@@ -18,9 +19,15 @@ import requests
 import six
 if six.PY3:
     from mechanicalsoup import StatefulBrowser as MechanizeBrowser
+    # code below taken from mechanize._sockettimeout
+    try:
+        DEFAULT_TIMEOUT = socket._GLOBAL_DEFAULT_TIMEOUT
+    except AttributeError:
+        DEFAULT_TIMEOUT = object()
 else:
     import mechanize
     MechanizeBrowser = mechanize.Browser
+    DEFAULT_TIMEOUT = mechanize._sockettimeout._GLOBAL_DEFAULT_TIMEOUT
 try:
     from bs4 import BeautifulSoup
 except ImportError:
@@ -122,7 +129,7 @@ class PixivBrowser(MechanizeBrowser):
         defaultCookieJar.set_cookie(cookie)
 
     def open_with_retry(self, url, data=None,
-                        timeout=mechanize._sockettimeout._GLOBAL_DEFAULT_TIMEOUT,
+                        timeout=DEFAULT_TIMEOUT,
                         retry=None):
         if retry is None:
             retry = self._config.retry
