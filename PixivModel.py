@@ -16,9 +16,9 @@ from datetime import datetime
 import json
 
 from six.moves.urllib import parse as urlparse
-from six.moves.urllib.parse import unquote_plus
-import six
+from six.moves.urllib.parse import unquote_plus, unquote
 import bs4
+import six
 unicode = six.u
 
 def parse_tag_alt(tag):
@@ -499,7 +499,7 @@ class PixivImage:
                         # "/jump.php?http%3A%2F%2Farsenixc.deviantart.com%2Fart%2FWatchmaker-house-567480110"
                         if link_str.startswith("/jump.php?"):
                             link_str = link_str[10:]
-                            link_str = urllib.unquote(link_str)
+                            link_str = unquote(link_str)
                         self.descriptionUrlList.append(link_str)
 
     def ParseWorksData(self, page):
