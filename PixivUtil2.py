@@ -122,13 +122,11 @@ def get_remote_filesize(url, referer):
     req = PixivHelper.create_custom_request(url, __config__, referer, head=True)
     if six.PY2:
         res = __br__.open_novisit(req)
-
-        try:
-            file_size = int(res.info()['Content-Length'])
-        except KeyError:
-            file_size = -1
-            PixivHelper.print_and_log('info', "\tNo file size information!")
     else:
+        res = urlopen(req)
+    try:
+        file_size = int(res.info()['Content-Length'])
+    except KeyError:
         file_size = -1
         PixivHelper.print_and_log('debug', "\tNo method to check file size (python3)")
     print("Remote filesize = {0} ({1} Bytes)".format(PixivHelper.sizeInStr(file_size), file_size))

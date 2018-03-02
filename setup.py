@@ -56,8 +56,10 @@ options = {'py2exe': {'compressed': 1, 'excludes': ['Tkconstants', 'Tkinter']}, 
 setup_kwargs = dict(console=console, requires=requires, options=options)
 
 if not isWindows:
-    setup_kwargs = dict(
-        entry_points={'console_scripts': ['PixivUtil2 = PixivUtil2:main', ]})
+    setup_kwargs = dict(entry_points={'console_scripts': [
+        'PixivUtil2 = PixivUtil2:main',
+        'PixivUtil2-server = pixiv_util2.server:cli',
+    ]})
 
 if SETUPTOOLS_USED:
     setup_kwargs['project_urls'] = {
@@ -83,6 +85,19 @@ if ranWithPy3:
         'MechanicalSoup>=0.10.0',
         'six>=1.11.0',
     ]
+    setup_kwargs['extras_require'] = {
+        'server': [
+            'appdirs>=1.4.3',
+            'Flask-Admin>=1.5.0',
+            'flask-paginate==0.5.1',
+            'Flask-SQLAlchemy>=2.3.1',
+            'Flask-WTF>=0.14.2',
+            'Flask>=0.12.2',
+            'humanize>=0.5.1',
+            'SQLAlchemy-Utils>=0.32.18',
+            'structlog>=17.2.0',
+        ],
+    }
 # get program version
 main_ns = {}
 ver_path = convert_path('PixivConstant.py')

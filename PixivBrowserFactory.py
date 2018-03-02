@@ -11,12 +11,14 @@ import json
 import re
 import socket
 
+import six
+
 from six.moves import http_cookiejar as cookielib, http_client as httplib
 from six.moves.urllib import parse as urlparse, request as urllib2
 from six.moves.urllib.parse import urlencode
 from six.moves.urllib.error import HTTPError
 import requests
-import six
+
 if six.PY3:
     from mechanicalsoup import StatefulBrowser as MechanizeBrowser
     # code below taken from mechanize._sockettimeout
@@ -28,6 +30,34 @@ else:
     import mechanize
     MechanizeBrowser = mechanize.Browser
     DEFAULT_TIMEOUT = mechanize._sockettimeout._GLOBAL_DEFAULT_TIMEOUT
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    from BeautifulSoup import BeautifulSoup
+
+import six
+
+from six.moves import http_cookiejar as cookielib, http_client as httplib
+from six.moves.urllib import parse as urlparse, request as urllib2
+if six.PY3:
+    from mechanicalsoup import StatefulBrowser as MechanizeBrowser
+else:
+    import mechanize
+    MechanizeBrowser = mechanize.Browser
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    from BeautifulSoup import BeautifulSoup
+
+import six
+
+from six.moves import http_cookiejar as cookielib, http_client as httplib
+from six.moves.urllib import parse as urlparse, request as urllib2
+if six.PY3:
+    from mechanicalsoup import StatefulBrowser as MechanizeBrowser
+else:
+    import mechanize
+    MechanizeBrowser = mechanize.Browser
 try:
     from bs4 import BeautifulSoup
 except ImportError:

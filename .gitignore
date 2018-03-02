@@ -20,3 +20,5 @@ testapp*/*
 *.bak
 *.pyo
 pixivutil.log*
+Error medium page for image *.html
+config.ini.error-*
