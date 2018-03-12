@@ -61,13 +61,6 @@ if SETUPTOOLS_USED:
         'Source': 'https://github.com/Nandaka/PixivUtil2',
     }
 
-if SETUPTOOLS_USED:
-    setup_kwargs['project_urls'] = {
-        'Bug Reports': 'https://github.com/Nandaka/PixivUtil2/issues',
-        'Funding': 'https://bit.ly/PixivUtilDonation',
-        'Source': 'https://github.com/Nandaka/PixivUtil2',
-    }
-
 # get install_requires
 here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'requirements.txt')) as f:
