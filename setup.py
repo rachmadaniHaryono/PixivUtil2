@@ -32,14 +32,7 @@ class bcolors:
 
 if not isWindows:
     if ranWithPy3:
-        print(bcolors.WARNING)
-        print("Attention: PixivUtil2 is not yet compatible with Python 3.  You have run this script with Python 3.")
-        print("To install dependancies you will need to use a specific version of pip e.g.:\n")
-        print("\tpip-2.7 install -r requirements.txt\n")
-        print("To run you will need to specify python 2.x:\n")
-        print("\tpython2 PixivUtil2.py\n")
-        print(bcolors.ENDC)
-        exit(-1)
+        pass
     else:
         print("After installing, run with command:\n")
         print("\tPixivUtil2\n")
