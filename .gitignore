@@ -22,3 +22,7 @@ testapp*/*
 pixivutil.log*
 Error medium page for image *.html
 config.ini.error-*
+pixiv_util2/pixiv_util2_server.sqlite
+.eggs/
+PixivUtil2.egg-info/
+UNKNOWN.egg-info/
