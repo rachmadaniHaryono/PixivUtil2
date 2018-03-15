@@ -5,6 +5,7 @@ import sys
 from flask import Flask, send_from_directory
 from flask.cli import FlaskGroup
 from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
 import click
 import structlog
 
@@ -47,6 +48,15 @@ def create_app(script_info=None):
         )
     )
     admin.add_view(views.ImageView(models.Image, models.db.session))
+    model_args = [
+        models.ImageUrl,
+        models.Artist,
+        models.Namespace,
+        models.Tag,
+        models.ImageId,
+    ]
+    for m in model_args:
+        admin.add_view(ModelView(m, models.db.session))
     app.add_url_rule('/f/<path:filename>', 'files', lambda filename:send_from_directory(models.file_path, filename))  # NOQA
     return app
 
