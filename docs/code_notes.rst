@@ -107,7 +107,7 @@ https://github.com/Nandaka/PixivUtil2/blob/0f3a8d5d8ab44524d3dda3cca18be2bb5a42c
           (image, parse_medium_page) = PixivBrowserFactory.getBrowser().getImagePage(
           image_id=image_id, parent=artist, from_bookmark=bookmark, bookmark_count=bookmark_count) 
           # pp vars(image)
-          # {'artist': <PixivModel.PixivArtist object at 0x7f17d8767438>,
+          # {'artist': <PixivModel.PixivArtist object at 0x7f17d8767439>,
           #  'bookmark_count': -1,
           #  'dateFormat': '',
           #  'descriptionUrlList': [],
