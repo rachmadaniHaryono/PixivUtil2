@@ -170,7 +170,7 @@ class PixivArtist:
             self.artistName = "yourself"
             self.artistToken = "yourself"
             temp = page.find("h1", attrs={'class': 'column-title'}).find("a")
-            unicode_page = unicode(page) is six.PY2 else unicode_page = str(unicode(page))
+            unicode_page = unicode(page) if six.PY2 else str(unicode(page))
             self.artistId = int(re.findall(r'pixiv.user.id = "(\d+)";', unicode_page)[0])
             return
 
@@ -1263,7 +1263,7 @@ class SharedParser:
         count_badge_span = page.find('span', attrs={'class': 'count-badge'})
         if count_badge_span is not None:
             temp_count = re.findall(r'\d+', count_badge_span.string)
-            len_temp_count = len(temp_count) if six.PY3 temp_count
+            len_temp_count = len(temp_count) if six.PY3 else temp_count
             if len_temp_count > 0:
                 total_images = int(temp_count[0])
         return total_images
