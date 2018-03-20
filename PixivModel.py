@@ -111,7 +111,7 @@ class PixivArtist:
                 raise PixivException('Member Error: ' + errorMessage, errorCode=PixivException.OTHER_MEMBER_ERROR, htmlPage=page)
 
             # detect if there is server error
-            errorMessage = self.IsServerErrorExist(page)
+            errorMessage = self.IsServerErrorExist(page) if six.PY2 else str(self.IsServerErrorExist(page))
             if errorMessage is not None:
                 raise PixivException('Member Error: ' + errorMessage, errorCode=PixivException.SERVER_ERROR, htmlPage=page)
 
@@ -170,7 +170,8 @@ class PixivArtist:
             self.artistName = "yourself"
             self.artistToken = "yourself"
             temp = page.find("h1", attrs={'class': 'column-title'}).find("a")
-            self.artistId = int(re.findall(r'pixiv.user.id = "(\d+)";', unicode(page))[0])
+            unicode_page = unicode(page) is six.PY2 else unicode_page = str(unicode(page))
+            self.artistId = int(re.findall(r'pixiv.user.id = "(\d+)";', unicode_page)[0])
             return
 
         # Issue #236
@@ -343,7 +344,7 @@ class PixivImage:
                 raise PixivException('Image Error: ' + errorMessage, errorCode=PixivException.UNKNOWN_IMAGE_ERROR, htmlPage=page)
 
             # detect if there is server error
-            errorMessage = self.IsServerErrorExist(page)
+            errorMessage = self.IsServerErrorExist(page) if six.PY2 else str(self.IsServerErrorExist(page))
             if errorMessage is not None:
                 raise PixivException('Image Error: ' + errorMessage, errorCode=PixivException.SERVER_ERROR, htmlPage=page)
 
@@ -1262,6 +1263,7 @@ class SharedParser:
         count_badge_span = page.find('span', attrs={'class': 'count-badge'})
         if count_badge_span is not None:
             temp_count = re.findall(r'\d+', count_badge_span.string)
-            if temp_count > 0:
+            len_temp_count = len(temp_count) if six.PY3 temp_count
+            if len_temp_count > 0:
                 total_images = int(temp_count[0])
         return total_images
