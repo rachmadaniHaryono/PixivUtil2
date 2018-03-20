@@ -26,3 +26,4 @@ pixiv_util2/pixiv_util2_server.sqlite
 .eggs/
 PixivUtil2.egg-info/
 UNKNOWN.egg-info/
+.pytest_cache/
