@@ -11,90 +11,35 @@ import json
 import re
 import socket
 
-import six
-
 from six.moves import http_cookiejar as cookielib, http_client as httplib
 from six.moves.urllib import parse as urlparse, request as urllib2
-from six.moves.urllib.parse import urlencode
 from six.moves.urllib.error import HTTPError
-import requests
+from six.moves.urllib.parse import urlencode
+import six
 
 if six.PY3:
+    from bs4 import BeautifulSoup
     from mechanicalsoup import StatefulBrowser as MechanizeBrowser
+    import requests
+
     # code below taken from mechanize._sockettimeout
     try:
         DEFAULT_TIMEOUT = socket._GLOBAL_DEFAULT_TIMEOUT
     except AttributeError:
         DEFAULT_TIMEOUT = object()
 else:
+    from BeautifulSoup import BeautifulSoup
     import mechanize
-    MechanizeBrowser = mechanize.Browser
+
     DEFAULT_TIMEOUT = mechanize._sockettimeout._GLOBAL_DEFAULT_TIMEOUT
-try:
-    from bs4 import BeautifulSoup
-except ImportError:
-    from BeautifulSoup import BeautifulSoup
-
-import six
-
-from six.moves import http_cookiejar as cookielib, http_client as httplib
-from six.moves.urllib import parse as urlparse, request as urllib2
-if six.PY3:
-    from mechanicalsoup import StatefulBrowser as MechanizeBrowser
-else:
-    import mechanize
     MechanizeBrowser = mechanize.Browser
-try:
-    from bs4 import BeautifulSoup
-except ImportError:
-    from BeautifulSoup import BeautifulSoup
+    requests = None
 
-import six
 
-from six.moves import http_cookiejar as cookielib, http_client as httplib
-from six.moves.urllib import parse as urlparse, request as urllib2
-if six.PY3:
-    from mechanicalsoup import StatefulBrowser as MechanizeBrowser
-else:
-    import mechanize
-    MechanizeBrowser = mechanize.Browser
-try:
-    from bs4 import BeautifulSoup
-except ImportError:
-    from BeautifulSoup import BeautifulSoup
-
-import six
-
-from six.moves import http_cookiejar as cookielib, http_client as httplib
-from six.moves.urllib import parse as urlparse, request as urllib2
-if six.PY3:
-    from mechanicalsoup import StatefulBrowser as MechanizeBrowser
-else:
-    import mechanize
-    MechanizeBrowser = mechanize.Browser
-try:
-    from bs4 import BeautifulSoup
-except ImportError:
-    from BeautifulSoup import BeautifulSoup
-
-import six
-
-from six.moves import http_cookiejar as cookielib, http_client as httplib
-from six.moves.urllib import parse as urlparse, request as urllib2
-if six.PY3:
-    from mechanicalsoup import StatefulBrowser as MechanizeBrowser
-else:
-    import mechanize
-    MechanizeBrowser = mechanize.Browser
-try:
-    from bs4 import BeautifulSoup
-except ImportError:
-    from BeautifulSoup import BeautifulSoup
-
-import PixivHelper
 from PixivException import PixivException
-import PixivModelWhiteCube
+import PixivHelper
 import PixivModel
+import PixivModelWhiteCube
 
 
 unicode = six.u
