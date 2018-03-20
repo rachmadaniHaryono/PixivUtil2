@@ -227,7 +227,7 @@ class PixivBrowser(MechanizeBrowser):
             PixivHelper.print_and_log('info', 'Trying to log in with saved cookie')
             self._loadCookie(login_cookie)
             res = self.open('https://www.pixiv.net/mypage.php')
-            if isinstance(res, requests.models.Response):
+            if six.PY3 and isinstance(res, requests.models.Response):
                 resData = res.text
                 resUrl = res.url
             else:
@@ -258,7 +258,7 @@ class PixivBrowser(MechanizeBrowser):
             page = self.open(url)
 
             # get the post key
-            if isinstance(page, requests.models.Response):
+            if six.PY3 and isinstance(page, requests.models.Response):
                 page = page.text
             try:
                 parsed = BeautifulSoup(page, 'lxml')
