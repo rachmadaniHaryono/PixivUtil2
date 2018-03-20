@@ -22,7 +22,7 @@ import six
 unicode = six.u
 
 def parse_tag_alt(tag):
-    TODO: match with upstream/master branch
+    # TODO: match with upstream/master branch
     if six.PY2:
         tag_has_key_class = tag.has_key('class')  # NOQA
     else:
