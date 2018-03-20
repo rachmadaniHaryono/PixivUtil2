@@ -17,8 +17,12 @@ import json
 
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib.parse import unquote_plus, unquote
-import bs4
 import six
+if six.PY3:
+    import bs4
+else:
+    bs4 = None
+
 unicode = six.u
 
 def parse_tag_alt(tag):
