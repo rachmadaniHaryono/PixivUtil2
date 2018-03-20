@@ -32,7 +32,9 @@ class bcolors:
 
 if not isWindows:
     if ranWithPy3:
-        pass
+        if sys.version_info < (3, 4):
+            print('Program require at least Numpy 1.14.2, which require minimum python 3.4')
+            sys.exit(-1)
     else:
         print("After installing, run with command:\n")
         print("\tPixivUtil2\n")
@@ -70,7 +72,7 @@ if ranWithPy3:
     install_requires = [
         'beautifulsoup4>=4.6.0',
         'imageio>=2.1.2',
-        'numpy>=1.12.1',
+        'numpy>=1.14.2',
         'Pillow>=4.3.0',
         'socksipy-branch>=1.01',
         'win_unicode_console>=0.5',
