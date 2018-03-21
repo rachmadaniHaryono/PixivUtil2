@@ -1120,7 +1120,7 @@ class PixivTags:
 
         linkList = page.findAll('a')
         for link in linkList:
-            if link.has_key('href'):
+            if link.has_key('href') if six.PY2 else link.has_attr('href'):
                 result = self.__re_illust.findall(link['href'])
                 if len(result) > 0:
                     image_id = int(result[0])
