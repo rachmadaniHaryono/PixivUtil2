@@ -468,7 +468,7 @@ def print_and_log(level, msg):
         GetLogger().info(msg)
     elif level == 'error':
         GetLogger().error(msg)
-        if sys.version_info == (3, 4):
+        if sys.version_info.major == 3 and sys.version_info.minor == 4:
             args = sys.exc_info()
             GetLogger().error(traceback.format_exception(*args))
         else:
