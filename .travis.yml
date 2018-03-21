@@ -1,6 +1,6 @@
 language: python
 python:
-  #- "2.7"
+  - "2.7"
   - "3.4"
   - "3.5"
   - "3.6"
@@ -11,4 +11,4 @@ install:
 # command to run tests
 script:
   - ln -s test.PixivModel.py test_PixivModel.py
-  - pytest ./test_PixivModel.py
+  - pytest -v ./test_PixivModel.py
