@@ -558,7 +558,7 @@ class PixivImage:
             temp2 = temp.findAll('a')
             if temp2 is not None and len(temp2) > 0:
                 for tag in temp2:
-                    if tag.has_key('class'):
+                    if tag.has_key('class') if six.PY2 else tag.has_attr('class'):
                         if tag['class'] == 'portal':
                             pass
                         elif tag['class'] == 'text' and tag.string is not None:
