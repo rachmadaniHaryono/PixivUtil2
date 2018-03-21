@@ -29,8 +29,6 @@ else:
     from BeautifulSoup import BeautifulSoup
     from mechanize import Browser
 
-py3_todo = pytest.mark.xfail(sys.version_info >= (3, 0), reason="requires python3")
-
 
 class MockPixivBrowser(PixivBrowser):
     mode = None
@@ -53,7 +51,6 @@ class MockPixivBrowser(PixivBrowser):
 
 
 class TestPixivArtist(unittest.TestCase):
-    @py3_todo
     def testPixivArtistProfileDataSrc(self):
         # print('\nTesting member page ProfileDataSrc')
         artist = None
@@ -90,7 +87,6 @@ class TestPixivArtist(unittest.TestCase):
         page.decompose()
         del page
 
-    @py3_todo
     def testPixivArtistNoAvatar(self):
         # print('\nTesting member page without avatar image')
         p = open('./test/test-member-noavatar.htm', 'r')
@@ -124,7 +120,6 @@ class TestPixivArtist(unittest.TestCase):
         page.decompose()
         del page
 
-    @py3_todo
     def testPixivArtistBookmark(self):
         # print('\nTesting member page')
         p = open('./test/test-member-bookmark.htm', 'r')
@@ -152,7 +147,6 @@ class TestPixivArtist(unittest.TestCase):
         page.decompose()
         del page
 
-    @py3_todo
     def testPixivArtistManageSelf(self):
         # print('\nTesting own page ')
         p = open('./test/test-member-self.htm', 'r')
@@ -169,7 +163,6 @@ class TestPixivArtist(unittest.TestCase):
         self.assertGreaterEqual(artist.totalImages, 1)
         self.assertIn(65079382, artist.imageList)
 
-    @py3_todo
     def testPixivArtistManageSelf2(self):
         # print('\nTesting own page ')
         p = open('./test/Error_page_for_member_539661.htm', 'r')
@@ -188,7 +181,6 @@ class TestPixivArtist(unittest.TestCase):
 
 
 class TestPixivImage(unittest.TestCase):
-    @py3_todo
     def testPixivImageParseInfo(self):
         p = open('./test/test-image-info.html', 'r')
         page = BeautifulSoup(p.read())
@@ -216,7 +208,6 @@ class TestPixivImage(unittest.TestCase):
         # self.assertEqual(image2.jd_rtt, 66470)
         self.assertEqual(image2.artist.artistToken, 'nardack')
 
-    @py3_todo
     def testPixivImageParseInfoJa(self):
         p = open('./test/test-image-parse-image-40273739-ja.html', 'r')
         page = BeautifulSoup(p.read())
@@ -241,7 +232,6 @@ class TestPixivImage(unittest.TestCase):
         self.assertEqual(image2.worksTools, 'Photoshop SAI')
         self.assertEqual(image2.artist.artistToken, 'k2321656')
 
-    @py3_todo
     def testPixivImageParseInfoMixed(self):
         p = open('./test/test-image-info2.html', 'r')
         page = BeautifulSoup(p.read())
@@ -266,7 +256,6 @@ class TestPixivImage(unittest.TestCase):
         self.assertEqual(image2.worksResolution, '721x1200')
         self.assertEqual(image2.artist.artistToken, 'kawanocyan')
 
-    @py3_todo
     def testPixivImageParseInfoPixivPremiumOffer(self):
         p = open('./test/test-image-parse-image-38826533-pixiv-premium.html', 'r')
         page = BeautifulSoup(p.read())
@@ -292,7 +281,6 @@ class TestPixivImage(unittest.TestCase):
         # self.assertEqual(image2.jd_rtt, 66470)
         self.assertEqual(image2.artist.artistToken, 'hvcv')
 
-    @py3_todo
     def testPixivImageNoAvatar(self):
         # print('\nTesting artist page without avatar image')
         p = open('./test/test-image-noavatar.htm', 'r')
@@ -309,7 +297,6 @@ class TestPixivImage(unittest.TestCase):
         self.assertEqual(image.worksResolution, '512x600')
         self.assertEqual(image.worksTools, 'RETAS STUDIO')
 
-    @py3_todo
     def testPixivImageParseTags(self):
         p = open('./test/test-image-parse-tags.htm', 'r')
         page = BeautifulSoup(p.read())
@@ -326,7 +313,6 @@ class TestPixivImage(unittest.TestCase):
         joinedResult = " ".join(image.imageTags)
         self.assertEqual(joinedResult.find("VOCALOID") > -1, True)
 
-    @py3_todo
     def testPixivImageParseNoTags(self):
         p = open('./test/test-image-no_tags.htm', 'r')
         page = BeautifulSoup(p.read())
@@ -341,7 +327,6 @@ class TestPixivImage(unittest.TestCase):
         self.assertEqual(image.worksTools, u'SAI')
         self.assertEqual(image.imageTags, [])
 
-    @py3_todo
     def testPixivImageUnicode(self):
         # print('\nTesting image page - big')
         p = open('./test/test-image-unicode.htm', 'r')
@@ -358,8 +343,6 @@ class TestPixivImage(unittest.TestCase):
         # print(image.worksTools)
         self.assertEqual(image.worksTools, u'Photoshop SAI つけペン')
 
-    @py3_todo
-    @py3_todo
     def testPixivImageRateCount(self):
         p = open('./test/test-image-rate_count.htm', 'r')
         page = BeautifulSoup(p.read())
@@ -403,7 +386,6 @@ class TestPixivImage(unittest.TestCase):
         page.decompose()
         del page
 
-    @py3_todo
     def testPixivImageModeManga(self):
         # print('\nTesting image page - manga')
         p = open('./test/test-image-manga.htm', 'r')
@@ -416,7 +398,6 @@ class TestPixivImage(unittest.TestCase):
         self.assertEqual(image.imageId, 28820443)
         self.assertEqual(image.imageMode, 'manga')
 
-    @py3_todo
     def testPixivImageParseMangaInfoMixed(self):
         # print('\nTesting parse Manga Images')
         # Issue #224
@@ -523,7 +504,6 @@ class TestPixivImage(unittest.TestCase):
         page.decompose()
         del page
 
-    @py3_todo
     def testPixivImageUgoira(self):
         # print('\nTesting image page')
         p = open('./test/test-image-ugoira.htm', 'r')
@@ -535,7 +515,6 @@ class TestPixivImage(unittest.TestCase):
         page.decompose()
         del page
 
-    @py3_todo
     def testPixivImageParseInfoSelf(self):
         # assuming being accessed via manage page for your own artwork.
         p = open('./test/test-image-selfimage.htm', 'r')
@@ -565,7 +544,6 @@ class TestPixivBookmark(unittest.TestCase):
 
         self.assertEqual(len(result.imageList), 20)
 
-    @py3_todo
     def testPixivImageBookmark(self):
         # print('\nTesting PixivImageBookmark')
         p = open('./test/test-image-bookmark.htm', 'r')
@@ -739,7 +717,6 @@ class TestPixivTags(unittest.TestCase):
 
 
 class TestPixivGroup(unittest.TestCase):
-    @py3_todo
     def testParseJson(self):
         path = './test/group.json'
         p = open(path)
