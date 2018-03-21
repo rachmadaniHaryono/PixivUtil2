@@ -241,7 +241,7 @@ class PixivArtist:
             raise PixivException('No image found!', errorCode=PixivException.NO_IMAGES, htmlPage=page)
 
     def is_not_logged_in(self, page):
-        check = page.findAll('div', attrs={'id': 'register-introduction-modal'})
+        check = page.findAll('a', attrs={'class': 'signup_button'})
         if check is not None and len(check) > 0:
             return True
         return False
@@ -350,6 +350,10 @@ class PixivImage:
                 raise PixivException('Image is disabled for under 18, check your setting page (R-18/R-18G)!',
                                      errorCode=PixivException.R_18_DISABLED, htmlPage=page)
 
+            # check if there is any other error
+            if self.IsErrorPage(page):
+                raise PixivException('An error occurred!', errorCode=PixivException.OTHER_IMAGE_ERROR, htmlPage=page)
+
             # detect if there is any other error
             errorMessage = self.IsErrorExist(page)
             if errorMessage is not None:
@@ -379,6 +383,15 @@ class PixivImage:
         if check is not None and len(check) > 0:
             return True
         return False
+
+    def IsErrorPage(self, page):
+        check = page.findAll('span', attrs={'class': 'error'})
+        if len(check) > 0:
+            check2 = check[0].findAll('strong')
+            if len(check2) > 0:
+                return check2[0].renderContents()
+            return check[0].renderContents()
+        return None
 
     def IsNeedAppropriateLevel(self, page):
         errorMessages = ['該当作品の公開レベルにより閲覧できません。']
@@ -410,12 +423,7 @@ class PixivImage:
             check2 = check[0].findAll('strong')
             if len(check2) > 0:
                 return check2[0].renderContents()
-
-        check = page.findAll('div', attrs={'class': '_unit error-unit'})
-        if len(check) > 0:
-            check2 = check[0].findAll('p', attrs={'class': 'error-message'})
-            if len(check2) > 0:
-                return check2[0].renderContents()
+            return check[0].renderContents()
         return None
 
     def IsServerErrorExist(self, page):
@@ -424,6 +432,7 @@ class PixivImage:
             check2 = check[0].findAll('h2')
             if len(check2) > 0:
                 return check2[0].renderContents()
+            return check[0].renderContents()
         return None
 
     def ParseInfo(self, page):
@@ -1204,27 +1213,17 @@ class PixivGroup:
         self.maxId = data["max_id"]
         self.imageList = list()
         self.externalImageList = list()
-
         for imageData in data["imageArticles"]:
-            if imageData["detail"].has_key("id"):
-                # hosted in pixiv
+            if imageData["detail"].has_key("id") if six.PY2 else 'id' in imageData['detail']:
                 imageId = imageData["detail"]["id"]
                 self.imageList.append(imageId)
-            elif imageData["detail"].has_key("fullscale_url"):
-                # external images?
+            elif imageData["detail"].has_key("fullscale_url") if six.PY2 else 'fullscale_url' in imageData['detail']:
                 fullscale_url = imageData["detail"]["fullscale_url"]
                 member_id = PixivArtist()
                 member_id.artistId = imageData["user_id"]
-                if imageData.has_key("user_name"):
-                    member_id.artistName = imageData["user_name"]
-                    member_id.artistAvatar = self.parseAvatar(imageData["img"])
-                    member_id.artistToken = self.parseToken(imageData["img"])
-                else:
-                    # probably user is gone.
-                    member_id.artistName = imageData["user_id"]
-                    member_id.artistAvatar = ""
-                    member_id.artistToken = ""
-
+                member_id.artistName = imageData["user_name"]
+                member_id.artistAvatar = self.parseAvatar(imageData["img"])
+                member_id.artistToken = self.parseToken(imageData["img"])
                 image_data = PixivImage()
                 image_data.artist = member_id
                 image_data.originalArtist = member_id
