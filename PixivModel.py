@@ -21,9 +21,11 @@ import six
 if six.PY3:
     import bs4
 else:
+    import BeautifulSoup
     bs4 = None
 
-unicode = six.u
+
+unicode = PixivHelper.unicode_func
 
 def parse_tag_alt(tag):
     # TODO: match with upstream/master branch
@@ -174,8 +176,14 @@ class PixivArtist:
             self.artistName = "yourself"
             self.artistToken = "yourself"
             temp = page.find("h1", attrs={'class': 'column-title'}).find("a")
-            unicode_page = unicode(page) if six.PY2 else str(unicode(page))
-            self.artistId = int(re.findall(r'pixiv.user.id = "(\d+)";', unicode_page)[0])
+            try:
+                self.artistId = int(re.findall(r'pixiv.user.id = "(\d+)";', unicode(page))[0])
+            except TypeError as e:
+                unicode_page = unicode(page)
+                if six.PY2 and isinstance(unicode_page, BeautifulSoup.BeautifulSoup):
+                    self.artistId = int(re.findall(r'pixiv.user.id = "(\d+)";', str(page))[0])
+                else:
+                    raise e
             return
 
         # Issue #236
@@ -477,8 +485,11 @@ class PixivImage:
                         try:
                             self.imageCaption += (unicode(line))
                         except TypeError as e:
-                            if isinstance(line, bs4.element.Tag):
+                            unicode_line = unicode(line)
+                            if six.PY3 and isinstance(line, bs4.element.Tag):
                                 self.imageCaption += (unicode(line.text))
+                            elif six.PY2 and isinstance(unicode_line, BeautifulSoup.Tag):
+                                self.imageCaption += (unicode(str(line)))
                             else:
                                 raise e
 

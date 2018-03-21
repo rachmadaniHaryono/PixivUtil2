@@ -28,8 +28,15 @@ import six
 from six.moves.html_parser import HTMLParser
 from six.moves.urllib import request as urllib2
 
+
+def unicode_func(*args):
+    try:
+        return six.u(*args)
+    except TypeError:
+        return args[0]
+
 raw_input = six.moves.input
-unicode = six.u
+unicode = unicode_func
 
 if six.PY3:
     file = open  # linter fix
