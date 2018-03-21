@@ -468,7 +468,11 @@ def print_and_log(level, msg):
         GetLogger().info(msg)
     elif level == 'error':
         GetLogger().error(msg)
-        GetLogger().error(traceback.format_exc())
+        if sys.version_info == (3, 4):
+            args = sys.exc_info()
+            GetLogger().error(traceback.format_exception(*args))
+        else:
+            GetLogger().error(traceback.format_exc())
 
 
 def HaveStrings(page, strings):
