@@ -455,7 +455,8 @@ def dumpHtml(filename, html):
                 dump.close()
             return filename
         except Exception as ex:
-            print_and_log('error', ex.message)
+            ex_message = str(ex) if six.PY3 else ex.message
+            print_and_log('error', ex_message)
     else:
         print_and_log('info', 'No Dump')
     return ""

@@ -117,8 +117,10 @@ class PixivArtist:
                 raise PixivException('Member Error: ' + errorMessage, errorCode=PixivException.OTHER_MEMBER_ERROR, htmlPage=page)
 
             # detect if there is server error
-            errorMessage = self.IsServerErrorExist(page) if six.PY2 else str(self.IsServerErrorExist(page))
+            errorMessage = self.IsServerErrorExist(page)
             if errorMessage is not None:
+                if six.PY3 and isinstance(errorMessage, bytes):
+                    errorMessage = str(errorMessage)
                 raise PixivException('Member Error: ' + errorMessage, errorCode=PixivException.SERVER_ERROR, htmlPage=page)
 
             # detect if image count != 0
@@ -180,7 +182,8 @@ class PixivArtist:
                 self.artistId = int(re.findall(r'pixiv.user.id = "(\d+)";', unicode(page))[0])
             except TypeError as e:
                 unicode_page = unicode(page)
-                if six.PY2 and isinstance(unicode_page, BeautifulSoup.BeautifulSoup):
+                if ((six.PY2 and isinstance(unicode_page, BeautifulSoup.BeautifulSoup)) or 
+                        (six.PY3 and isinstance(unicode_page, bs4.BeautifulSoup))):
                     self.artistId = int(re.findall(r'pixiv.user.id = "(\d+)";', str(page))[0])
                 else:
                     raise e
@@ -360,8 +363,10 @@ class PixivImage:
                 raise PixivException('Image Error: ' + errorMessage, errorCode=PixivException.UNKNOWN_IMAGE_ERROR, htmlPage=page)
 
             # detect if there is server error
-            errorMessage = self.IsServerErrorExist(page) if six.PY2 else str(self.IsServerErrorExist(page))
+            errorMessage = self.IsServerErrorExist(page)
             if errorMessage is not None:
+                if six.PY3 and isinstance(errorMessage, bytes):
+                    errorMessage = str(errorMessage)
                 raise PixivException('Image Error: ' + errorMessage, errorCode=PixivException.SERVER_ERROR, htmlPage=page)
 
             # parse artist information
@@ -558,7 +563,8 @@ class PixivImage:
                             pass
                         elif tag['class'] == 'text' and tag.string is not None:
                             self.imageTags.append(unicode(tag.string))
-                        elif tag['class'].startswith('text js-click-trackable-later'):
+                        elif (tag['class'].startswith('text js-click-trackable-later') if six.PY2 else
+                                tag['class'][0].startswith('text js-click-trackable-later')):
                             # Issue#343
                             # no translation for tags
                             if tag.string is not None:
