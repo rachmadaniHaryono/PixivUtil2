@@ -591,7 +591,6 @@ class TestPixivBookmark(unittest.TestCase):
 
 
 class TestMyPickPage(unittest.TestCase):
-    @py3_todo
     def testMyPickPage(self):
         try:
             path = './test/test-image-my_pick.html'
@@ -603,7 +602,6 @@ class TestMyPickPage(unittest.TestCase):
         except PixivException as ex:
             self.assertEqual(ex.errorCode, 2002)
 
-    @py3_todo
     def testMyPickPageEng(self):
         try:
             path = './test/test-image-my_pick-e.html'
@@ -615,7 +613,6 @@ class TestMyPickPage(unittest.TestCase):
         except PixivException as ex:
             self.assertEqual(ex.errorCode, 2002)
 
-    @py3_todo
     def testGuroPageEng(self):
         try:
             path = './test/test-image-guro-e.html'
@@ -627,7 +624,6 @@ class TestMyPickPage(unittest.TestCase):
         except PixivException as ex:
             self.assertEqual(ex.errorCode, 2005)
 
-    @py3_todo
     def testEroPageEng(self):
         try:
             path = './test/test-image-ero-e.html'
@@ -641,7 +637,6 @@ class TestMyPickPage(unittest.TestCase):
 
 
 class TestPixivTags(unittest.TestCase):
-    @py3_todo
     def testTagsSearchExact1(self):
         path = './test/test-tags-search-exact2.htm'
         p = open(path, 'r')
@@ -654,7 +649,6 @@ class TestPixivTags(unittest.TestCase):
         self.assertEqual(image.availableImages, 2282)
 
     # tags.php?tag=%E3%81%93%E3%81%AE%E4%B8%AD%E3%81%AB1%E4%BA%BA%E3%80%81%E5%A6%B9%E3%81%8C%E3%81%84%E3%82%8B%21
-    @py3_todo
     def testTagsSearchExact(self):
         path = './test/test-tags-search-exact.htm'
         p = open(path, 'r')
@@ -666,7 +660,6 @@ class TestPixivTags(unittest.TestCase):
         self.assertEqual(len(image.itemList), 40)
         self.assertEqual(image.isLastPage, False)
 
-    @py3_todo
     def testTagsSearchExactLast(self):
         path = './test/test-tags-search-exact-last.htm'
         p = open(path, 'r')
@@ -679,7 +672,6 @@ class TestPixivTags(unittest.TestCase):
         self.assertEqual(image.isLastPage, True)
 
     # search.php?s_mode=s_tag&word=%E5%88%9D%E6%98%A5%E9%A3%BE%E5%88%A9
-    @py3_todo
     def testTagsSearchPartial(self):
         path = './test/test-tags-search-partial.htm'
         p = open(path, 'r')
@@ -690,7 +682,6 @@ class TestPixivTags(unittest.TestCase):
         self.assertEqual(len(image.itemList), 40)
         self.assertEqual(image.isLastPage, False)
 
-    @py3_todo
     def testTagsSearchPartialLast(self):
         path = './test/test-tags-search-partial-last.htm'
         p = open(path, 'r')
@@ -701,7 +692,6 @@ class TestPixivTags(unittest.TestCase):
         self.assertEqual(image.itemList[-1].imageId, 15060554)
         self.assertEqual(image.isLastPage, True)
 
-    @py3_todo
     def testTagsSearchParseDetails(self):
         path = './test/test-tags-search-exact-parse_details.htm'
         p = open(path, 'r')
@@ -714,7 +704,6 @@ class TestPixivTags(unittest.TestCase):
         self.assertGreater(image.itemList[-1].bookmarkCount, 4)
         self.assertEqual(image.itemList[-1].imageResponse, 0)
 
-    @py3_todo
     def testTagsMemberSearch(self):
         path = './test/test-tags-member-search.htm'
         p = open(path, 'r')
@@ -728,7 +717,6 @@ class TestPixivTags(unittest.TestCase):
         self.assertEqual(image.isLastPage, False)
         self.assertEqual(image.availableImages, 70)
 
-    @py3_todo
     def testTagsMemberSearchLast(self):
         path = './test/test-tags-member-search-last.htm'
         p = open(path, 'r')
@@ -740,7 +728,6 @@ class TestPixivTags(unittest.TestCase):
         self.assertEqual(image.itemList[-1].imageId, 1804545)
         self.assertEqual(image.isLastPage, True)
 
-    @py3_todo
     def testTagsSkipShowcase(self):
         path = './test/test-tags-search-skip-showcase.htm'
         p = open(path, 'r')
