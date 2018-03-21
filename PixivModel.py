@@ -414,12 +414,17 @@ class PixivImage:
         #             self.imageCaption = meta["content"]
 
         # new layout on 20160319
+        # NOTE: on py3 there is 2 results
+        # [<h1 class="title"><a class="_icon sprites-logo" href="http://www.pixiv.net/mypage.php">pixiv</a></h1>,
+        # <h1 class="title">Cos-Nurse</h1>]
         temp_titles = page.findAll('h1', attrs={'class': 'title'})
         for tempTitle in temp_titles:
             if tempTitle is None or tempTitle.string is None:
                 continue
             elif len(tempTitle.string) == 0:
                 continue
+            elif six.PY3 and tempTitle.string == 'pixiv':
+                pass
             else:
                 self.imageTitle = tempTitle.string
                 break
@@ -989,8 +994,33 @@ class PixivBookmark:
         return l
 
     @staticmethod
+    def parseImageBookmarkPy3(page):
+        """Parse Image bookmark for python3."""
+        imageList = []
+        temp = page.select('ul._image-items a')
+        a_tags = page.select('a')
+        alt_a_tags = page.select('ul.count-list a')
+        hrefs = [x.attrs['href'] for x in alt_a_tags]
+        mi_keyword = 'member_illust.php?mode=medium&illust_id='
+        for item in hrefs:
+            # This assume each hrefs only contain similar text
+            # '/bookmark_detail.php?illust_id=28629066',
+            item_id = item.replace('/bookmark_detail.php?illust_id=', '')
+            item_id = int(item_id)
+            if item_id not in imageList:
+                imageList.append(int(item_id))
+        for item in [x.attrs.get('href', '') for x in a_tags if mi_keyword in x.attrs.get('href', '')]:
+            item_id = item.replace(mi_keyword, '')
+            item_id = int(item_id)
+            if item_id not in imageList:
+                imageList.append(int(item_id))
+        return imageList
+
+    @staticmethod
     def parseImageBookmark(page):
         imageList = list()
+        if six.PY3:
+            imageList.extend(PixivBookmark.parseImageBookmarkPy3(page))
 
         temp = page.find('ul', attrs={'class': PixivBookmark.__re_imageULItemsClass})
         temp = temp.findAll('a')
