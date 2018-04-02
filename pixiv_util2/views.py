@@ -6,6 +6,7 @@ import tempfile
 from flask import request, url_for
 from flask_admin import AdminIndexView, expose, form
 from flask_admin.contrib import sqla
+from flask_admin.form.rules import Field
 from jinja2 import Markup
 import hashlib
 import structlog
@@ -63,6 +64,7 @@ class HomeView(AdminIndexView):
         log.debug('template kwargs', image_ids=template_kwargs['image_ids'])
         return self.render('pixiv_util2/admin_index.html', **template_kwargs)
 
+
 def generate_image_name(obj, file_data):
     import shutil
     filename = file_data.filename
@@ -87,7 +89,14 @@ def generate_image_name(obj, file_data):
     return new_filename
 
 
+class ReadonlyFiledRule(Field):
+    def __call__(self, form, form_opts=None, field_args={}):
+        field_args['readonly'] = True
+        return super(ReadonlyFiledRule, self).__call__(form, form_opts, field_args)
+
+
 class ImageView(sqla.ModelView):
+
     def _list_thumbnail(view, context, model, name):
         if not model.path:
             return ''
@@ -96,8 +105,16 @@ class ImageView(sqla.ModelView):
             url_for('files', filename=model.path),
         ))
 
+    form_edit_rules = (
+        ReadonlyFiledRule('created_at'),
+        ReadonlyFiledRule('checksum'),
+        ReadonlyFiledRule('path'),
+        'image_urls',
+        'tags',
+    )
     column_formatters = {
-        'path': _list_thumbnail
+        'path': _list_thumbnail,
+        'checksum': lambda v, c, m, p: m.checksum[:7],
     }
     # Alternative way to contribute field is to override it completely.
     # In this case, Flask-Admin won't attempt to merge various parameters for the field.
