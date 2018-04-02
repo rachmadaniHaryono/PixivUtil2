@@ -16,6 +16,10 @@ image_id_tags = db.Table(
     'image_id_tags',
     db.Column('image_id', db.Integer, db.ForeignKey('image_id.id'), primary_key=True),
     db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'), primary_key=True))
+image_tags = db.Table(
+    'image_tags',
+    db.Column('image', db.Integer, db.ForeignKey('image.id'), primary_key=True),
+    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'), primary_key=True))
 
 
 class Base(db.Model):
@@ -25,9 +29,11 @@ class Base(db.Model):
 
 
 class Image(Base):
-    name = db.Column(db.String)
     path = db.Column(db.String)
     checksum = db.Column(db.String)
+    tags = db.relationship(
+        'Tag', secondary=image_tags, lazy='subquery',
+        backref=db.backref('images', lazy=True))
 
     def __str__(self):
         return self.name
@@ -63,6 +69,12 @@ class Tag(Base):
     namespace = db.relationship(
         'Namespace', foreign_keys='Tag.namespace_id', lazy='subquery',
         backref=db.backref('tags', lazy=True))
+
+    def __str__(self):
+        namespace_text = ''
+        if self.namespace:
+            namespace_text = '{}:'.format(self.namespace.value)
+        return '<Tag {0.id} {1}{0.name}>'.format(self, namespace_text)
 
 
 class ImageId(Base):
