@@ -1,21 +1,22 @@
 from urllib.parse import urlparse, parse_qs
+import imghdr
 import os
 import tempfile
 
 from flask import request, url_for
 from flask_admin import AdminIndexView, expose, form
 from flask_admin.contrib import sqla
-import structlog
-import hashlib
-
 from jinja2 import Markup
+import hashlib
+import structlog
 
-
-from pixiv_util2 import forms, models
+from pixiv_util2 import forms, models as pu2_models
 import PixivUtil2
 import PixivDBManager
 import PixivHelper
 import PixivBrowserFactory
+
+from . import models
 
 
 log = structlog.getLogger(__name__)
@@ -62,6 +63,29 @@ class HomeView(AdminIndexView):
         log.debug('template kwargs', image_ids=template_kwargs['image_ids'])
         return self.render('pixiv_util2/admin_index.html', **template_kwargs)
 
+def generate_image_name(obj, file_data):
+    import shutil
+    filename = file_data.filename
+    filename_ext = os.path.splitext(filename)[1]
+    with tempfile.NamedTemporaryFile() as temp:
+        shutil.copyfileobj(file_data.stream._file, temp)
+        imghdr_val = imghdr.what(temp.name)
+        checksum = sha256_checksum(temp.name)
+
+    filename_ext = '.' + imghdr_val if imghdr_val else filename_ext
+    if filename_ext:
+        new_filename = '{}{}'.format(checksum, filename_ext)
+    else:
+        new_filename = checksum
+    new_filename = os.path.join(new_filename[:2], new_filename)
+    file_data.filename = new_filename
+    obj.checksum = checksum
+    namespace = models.get_or_create(models.db.session, models.Namespace, value='filename')[0]
+    tag = models.get_or_create(models.db.session, models.Tag, namespace=namespace, name=filename)[0]
+    obj.tags.append(tag)
+    models.db.session.add(obj)
+    return new_filename
+
 
 class ImageView(sqla.ModelView):
     def _list_thumbnail(view, context, model, name):
@@ -78,17 +102,6 @@ class ImageView(sqla.ModelView):
     # Alternative way to contribute field is to override it completely.
     # In this case, Flask-Admin won't attempt to merge various parameters for the field.
     form_extra_fields = {
-        'path': form.ImageUploadField('Image', base_path=models.file_path, thumbnail_size=(100, 100, True))
+        'path': form.ImageUploadField(
+            'Image', base_path=pu2_models.file_path, thumbnail_size=(100, 100, True), namegen=generate_image_name)
     }
-
-    def on_model_change(self, form, model, is_created):
-        """Perform some actions before a model is created or updated."""
-        if is_created and isinstance(model, models.Image):
-            if not form.name.data:
-                model.name = os.path.splitext(form.path.data.filename)[0]
-            if not form.checksum.data:
-                with tempfile.NamedTemporaryFile() as temp:
-                    form.path.data.save(temp.name)
-                    checksum = sha256_checksum(temp.name)
-                model.checksum = checksum
-            models.db.session.add(model)
