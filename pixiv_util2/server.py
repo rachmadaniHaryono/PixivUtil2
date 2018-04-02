@@ -5,7 +5,9 @@ import sys
 from flask import Flask, send_from_directory
 from flask.cli import FlaskGroup
 from flask_admin import Admin
-from flask_admin.contrib.sqla import ModelView
+from flask_admin._compat import text_type
+from flask_admin.contrib.sqla import ModelView, fields
+from sqlalchemy.orm.util import identity_key
 import click
 import structlog
 
@@ -17,6 +19,19 @@ log = structlog.getLogger(__name__)
 if sys.version_info[0] < 3:
     print('PixivUtil2-server can only be run on 3')
     sys.exit(1)
+
+
+def get_pk_from_identity(obj):
+    """Monkey patck to fix flask-admin sqla error.
+
+    https://github.com/flask-admin/flask-admin/issues/1588
+    """
+    res = identity_key(instance=obj)
+    cls, key = res[0], res[1]  # NOQA
+    return u':'.join(text_type(x) for x in key)
+
+
+fields.get_pk_from_identity = get_pk_from_identity
 
 
 def create_app(script_info=None):
