@@ -25,7 +25,14 @@ else:
     bs4 = None
 
 
-unicode = PixivHelper.unicode_func
+def unicode_func(*args):
+    try:
+        return six.u(*args)
+    except TypeError:
+        return args[0]
+
+
+unicode = unicode_func
 
 
 class PixivArtist:
