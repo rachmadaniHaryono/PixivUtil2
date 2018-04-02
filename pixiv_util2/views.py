@@ -35,9 +35,9 @@ class HomeView(AdminIndexView):
     def index(self):
         index_form = forms.AdminIndexForm(request.args)
         template_kwargs = {'form': index_form, 'entries': []}
-        if index_form.image_ids.data:
+        if index_form.input_type.data == forms.AdminIndexForm.INPUT_TYPE_IMAGE_ID:
             template_kwargs['image_ids'] = [x.strip() for x in index_form.image_ids.data.split(',') if x.strip()]
-        elif index_form.url.data:
+        elif index_form.input_type.data == forms.AdminIndexForm.INPUT_TYPE_URL:
             template_kwargs['image_ids'] = parse_qs(urlparse(index_form.url.data).query)['illust_id']
         else:
             template_kwargs['image_ids'] = []
