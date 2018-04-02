@@ -124,3 +124,14 @@ def del_image(mapper, connection, target):
             os.remove(op.join(file_path, form.thumbgen_filename(target.path)))
         except OSError:
             pass
+
+
+def get_or_create(session, model, **kwargs):
+    """Creates an object or returns the object if exists."""
+    instance = session.query(model).filter_by(**kwargs).first()
+    created = False
+    if not instance:
+        instance = model(**kwargs)
+        session.add(instance)
+        created = True
+    return instance, created
