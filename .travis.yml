@@ -1,11 +1,12 @@
 language: python
 python:
   - "2.7"
+  - "3.6"
 # command to install dependencies
 install:
-  # - pip install mypy==0.620
   # typing is required for python2.7 only
-  - pip install typing
+  - if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]]; then pip install typing; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pip install mypy==0.620; fi
   - pip install -e .
   - pip install pytest
   - ln -s test.PixivDBManager.py test_PixivDBManager.py
@@ -16,4 +17,4 @@ install:
 script:
   - ln -s test.PixivModel.py test_PixivModel.py
   - pytest -v ./test_*
-  # - mypy --ignore-missing-imports *.py
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then mypy --ignore-missing-imports *.py; fi
