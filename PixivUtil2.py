@@ -6,9 +6,9 @@ from __future__ import print_function
 import sys
 try:
     stdin, stdout, stderr = sys.stdin, sys.stdout, sys.stderr
-    reload(sys)
+    reload(sys)  # type: ignore
     sys.stdin, sys.stdout, sys.stderr = stdin, stdout, stderr
-    sys.setdefaultencoding("utf-8")
+    sys.setdefaultencoding("utf-8")  # type: ignore
 except Exception as e:
     pass  # swallow the exception
 

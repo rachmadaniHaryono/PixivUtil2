@@ -11,6 +11,7 @@ if six.PY2:
 else:
     from six.moves.urllib.error import HTTPError
 
+raw_input = six.moves.input
 __config__ = PixivConfig.PixivConfig()
 PixivUtil2.__config__ = __config__
 __config__.loadConfig()
