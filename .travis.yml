@@ -3,6 +3,9 @@ python:
   - "2.7"
 # command to install dependencies
 install:
+  # - pip install mypy==0.620
+  # typing is required for python2.7 only
+  - pip install typing
   - pip install -e .
   - pip install pytest
   - ln -s test.PixivDBManager.py test_PixivDBManager.py
@@ -13,3 +16,4 @@ install:
 script:
   - ln -s test.PixivModel.py test_PixivModel.py
   - pytest -v ./test_*
+  # - mypy --ignore-missing-imports *.py
