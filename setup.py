@@ -71,6 +71,18 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'requirements.txt')) as f:
     install_requires = f.read().split('\n')
 install_requires = [x.strip() for x in install_requires]
+if ranWithPy3:
+    install_requires = [
+        'beautifulsoup4>=4.6.0',
+        'demjson>=2.2.4',
+        'imageio>=2.1.2',
+        'MechanicalSoup>=0.10.0',
+        'numpy>=1.14.2',
+        'Pillow>=4.3.0',
+        'six>=1.11.0',
+        'socksipy-branch>=1.01',
+        'win_unicode_console>=0.5',
+    ]
 # get program version
 main_ns = {}  # type: Any
 ver_path = convert_path('PixivConstant.py')
