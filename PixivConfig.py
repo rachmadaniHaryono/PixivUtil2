@@ -2,14 +2,16 @@
 # pylint: disable=I0011, C, C0302
 from __future__ import print_function
 
-import ConfigParser
+from six.moves import configparser as ConfigParser
 import sys
 import os
 import PixivHelper
 import shutil
 import time
 import os.path
+import six
 
+unicode = six.text_type
 script_path = PixivHelper.module_path()
 
 

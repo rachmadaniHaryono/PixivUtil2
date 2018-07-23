@@ -19,13 +19,17 @@ import gc
 import time
 import datetime
 import datetime_z
-import urllib2
+from six.moves.urllib.error import HTTPError, URLError
 import getpass
-import httplib
+from six.moves import http_client as httplib
 import codecs
 import subprocess
+import six
 
-from BeautifulSoup import BeautifulSoup
+if six.PY2:
+    from BeautifulSoup import BeautifulSoup
+else:
+    from bs4 import BeautifulSoup
 from typing import Any
 
 if os.name == 'nt':
@@ -89,9 +93,10 @@ ERROR_CODE = 0
 gc.enable()
 # gc.set_debug(gc.DEBUG_LEAK)
 
-import mechanize
-# replace unenscape_charref implementation with our implementation due to bug.
-mechanize._html.unescape_charref = PixivHelper.unescape_charref
+if six.PY2:
+    import mechanize
+    # replace unenscape_charref implementation with our implementation due to bug.
+    mechanize._html.unescape_charref = PixivHelper.unescape_charref
 
 __config__ = PixivConfig.PixivConfig()
 configfile = "config.ini"
@@ -289,13 +294,13 @@ def download_image(url, filename, referer, overwrite, max_retry, backup_old_file
 
                 return (PixivConstant.PIXIVUTIL_OK, filename)
 
-            except urllib2.HTTPError as httpError:
+            except HTTPError as httpError:
                 PixivHelper.print_and_log('error', '[download_image()] HTTP Error: {0} at {1}'.format(str(httpError), url))
                 if httpError.code == 404 or httpError.code == 502:
                     return (PixivConstant.PIXIVUTIL_NOT_OK, None)
                 temp_error_code = PixivException.DOWNLOAD_FAILED_NETWORK
                 raise
-            except urllib2.URLError as urlError:
+            except URLError as urlError:
                 PixivHelper.print_and_log('error', '[download_image()] URL Error: {0} at {1}'.format(str(urlError), url))
                 temp_error_code = PixivException.DOWNLOAD_FAILED_NETWORK
                 raise
@@ -785,7 +790,7 @@ def process_image(artist=None, image_id=None, user_dir='', bookmark=False, searc
                         manga_files[page] = filename
                         page = page + 1
 
-                    except urllib2.URLError:
+                    except URLError:
                         PixivHelper.print_and_log('error', 'Error when download_image(), giving up url: {0}'.format(img))
                     print('')
 

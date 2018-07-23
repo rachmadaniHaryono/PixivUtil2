@@ -6,7 +6,11 @@ import re
 import json
 import demjson
 from collections import OrderedDict
-from BeautifulSoup import BeautifulSoup
+import six
+if six.PY2:
+    from BeautifulSoup import BeautifulSoup
+else:
+    from bs4 import BeautifulSoup
 
 import PixivModel
 from PixivModel import PixivException

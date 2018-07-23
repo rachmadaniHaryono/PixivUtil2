@@ -5,7 +5,7 @@ from __future__ import print_function
 import re
 import os
 import codecs
-from HTMLParser import HTMLParser
+from six.moves.html_parser import HTMLParser
 import subprocess
 import sys
 import PixivModel
@@ -16,7 +16,7 @@ import zipfile
 import time
 import unicodedata
 import json
-import urllib2
+from six.moves.urllib.request import build_opener, install_opener, ProxyHandler, Request
 import imageio
 import shutil
 import tempfile
@@ -25,7 +25,9 @@ import traceback
 import urllib
 from apng import APNG
 import shlex
+import six
 
+unicode = six.text_type
 Logger = None
 _config = None
 
@@ -378,7 +380,10 @@ def module_path():
     if we_are_frozen():
         return os.path.dirname(unicode(sys.executable, sys.getfilesystemencoding()))
 
-    return os.path.dirname(unicode(__file__, sys.getfilesystemencoding()))
+    if six.PY2:
+        return os.path.dirname(unicode(__file__, sys.getfilesystemencoding()))
+    else:
+        return os.path.dirname(__file__)
 
 
 def speedInStr(totalSize, totalTime):
@@ -553,10 +558,10 @@ def printDelay(retryWait):
 
 def create_custom_request(url, config, referer='https://www.pixiv.net', head=False):
     if config.useProxy:
-        proxy = urllib2.ProxyHandler(config.proxy)
-        opener = urllib2.build_opener(proxy)
-        urllib2.install_opener(opener)
-    req = urllib2.Request(url)
+        proxy = ProxyHandler(config.proxy)
+        opener = build_opener(proxy)
+        install_opener(opener)
+    req = Request(url)
 
     req.add_header('Referer', referer)
     print_and_log('info', u"Using Referer: " + str(referer))

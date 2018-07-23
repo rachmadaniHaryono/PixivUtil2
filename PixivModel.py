@@ -11,10 +11,13 @@ import codecs
 import collections
 import urllib
 import PixivHelper
-import urlparse
+from six.moves.urllib import parse as urlparse
 from PixivException import PixivException
 from datetime import datetime
 import json
+import six
+
+unicode = six.text_type
 
 from typing import Any
 

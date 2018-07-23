@@ -2,15 +2,30 @@
 # pylint: disable=I0011, C, C0302
 from __future__ import print_function
 
-import mechanize
-from BeautifulSoup import BeautifulSoup
-import cookielib
+import six
 import socket
+if six.PY2:
+    import urllib
+    import urllib2
+
+    from BeautifulSoup import BeautifulSoup
+    from mechanize import Browser
+    import mechanize
+    _GLOBAL_DEFAULT_TIMEOUT =  mechanize._sockettimeout._GLOBAL_DEFAULT_TIMEOUT
+else:
+    from bs4 import BeautifulSoup
+    from mechanicalsoup import StatefulBrowser as Browser
+    from six.moves.urllib import request as urllib2
+    # code below taken from mechanize._sockettimeout
+    try:
+        _GLOBAL_DEFAULT_TIMEOUT = socket._GLOBAL_DEFAULT_TIMEOUT
+    except AttributeError:
+        _GLOBAL_DEFAULT_TIMEOUT = object()
+from six.moves import http_cookiejar as cookielib
+from six.moves.urllib.parse import urlencode, urlparse
+from six.moves.urllib.error import HTTPError
 import socks
-import urlparse
-import urllib
-import urllib2
-import httplib
+from six.moves import http_client as httplib
 import time
 import sys
 import json
@@ -29,7 +44,7 @@ _browser = None
 
 
 # pylint: disable=E1101
-class PixivBrowser(mechanize.Browser):
+class PixivBrowser(Browser):
     _config = None
     _isWhitecube = False
     _whitecubeToken = ""
@@ -39,10 +54,10 @@ class PixivBrowser(mechanize.Browser):
     def __init__(self, config, cookie_jar):
         # fix #218
         try:
-            mechanize.Browser.__init__(self, factory=mechanize.RobustFactory())
+            Browser.__init__(self, factory=mechanize.RobustFactory())
         except BaseException:
             PixivHelper.GetLogger().info("Using default factory (mechanize 3.x ?)")
-            mechanize.Browser.__init__(self)
+            Browser.__init__(self)
 
         self._configureBrowser(config)
         self._configureCookie(cookie_jar)
@@ -59,13 +74,14 @@ class PixivBrowser(mechanize.Browser):
         self._config = config
         if config.useProxy:
             if config.proxyAddress.startswith('socks'):
-                parseResult = urlparse.urlparse(config.proxyAddress)
+                parseResult = urlparse(config.proxyAddress)
                 assert parseResult.scheme and parseResult.hostname and parseResult.port
                 socksType = socks.PROXY_TYPE_SOCKS5 if parseResult.scheme == 'socks5' else socks.PROXY_TYPE_SOCKS4
 
                 socks.setdefaultproxy(socksType, parseResult.hostname, parseResult.port)
-                socks.wrapmodule(urllib)
-                socks.wrapmodule(urllib2)
+                if six.PY2:
+                    socks.wrapmodule(urllib)
+                    socks.wrapmodule(urllib2)
                 socks.wrapmodule(httplib)
 
                 PixivHelper.GetLogger().info("Using SOCKS Proxy: %s", config.proxyAddress)
@@ -106,7 +122,7 @@ class PixivBrowser(mechanize.Browser):
         defaultCookieJar.set_cookie(cookie)
 
     def open_with_retry(self, url, data=None,
-                        timeout=mechanize._sockettimeout._GLOBAL_DEFAULT_TIMEOUT,
+                        timeout=_GLOBAL_DEFAULT_TIMEOUT,
                         retry=None):
         retry_count = 0
         if retry is None:
@@ -116,7 +132,7 @@ class PixivBrowser(mechanize.Browser):
             try:
                 return self.open(url, data, timeout)
             except Exception as ex:
-                if isinstance(ex, urllib2.HTTPError):
+                if isinstance(ex, HTTPError):
                     raise
 
                 if retry_count < retry:
@@ -146,7 +162,7 @@ class PixivBrowser(mechanize.Browser):
                 else:
                     return page
             except Exception as ex:
-                if isinstance(ex, urllib2.HTTPError):
+                if isinstance(ex, HTTPError):
                     if ex.code in [403, 404, 503]:
                         return BeautifulSoup(ex.read())
 
@@ -230,7 +246,7 @@ class PixivBrowser(mechanize.Browser):
             data['source'] = "accounts"
             data['ref'] = ''
 
-            request = urllib2.Request("https://accounts.pixiv.net/api/login?lang=en", urllib.urlencode(data))
+            request = urllib2.Request("https://accounts.pixiv.net/api/login?lang=en", urlencode(data))
             response = self.open(request)
 
             return self.processLoginResult(response)
