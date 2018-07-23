@@ -1,3 +1,18 @@
-include requirements.txt
+include apng.py
+include changelog.txt
+include datetime_z.py
+include LICENSE
+include PixivBrowserFactory.py
+include PixivConfig.py
 include PixivConstant.py
+include PixivDBManager.py
+include PixivException.py
+include PixivHelper.py
+include PixivModel.py
+include PixivModelWhiteCube.py
+include PixivUtil2.py
 include readme.txt
+include requirements.txt
+recursive-exclude * *.py[co]
+recursive-exclude * __pycache__
+recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
