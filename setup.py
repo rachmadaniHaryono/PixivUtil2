@@ -9,9 +9,10 @@ try:
     from setuptools import setup, convert_path, find_packages
     SETUPTOOLS_USED = True
 except ImportError:
-    from distutils.core import setup, find_packages
+    from distutils.core import setup, find_packages  # type: ignore
     from distutils.util import convert_path
     SETUPTOOLS_USED = False
+from typing import Any
 
 isWindows = os.name is 'nt'
 ranWithPy3 = sys.version_info >= (3, 0)
@@ -38,7 +39,7 @@ if not isWindows:
         print("To run you will need to specify python 2.x:\n")
         print("\tpython2 PixivUtil2.py\n")
         print(bcolors.ENDC)
-        exit(-1)
+        #  exit(-1)
     else:
         print("After installing, run with command:\n")
         print("\tPixivUtil2\n")
@@ -71,7 +72,7 @@ with open(path.join(here, 'requirements.txt')) as f:
     install_requires = f.read().split('\n')
 install_requires = [x.strip() for x in install_requires]
 # get program version
-main_ns = {}
+main_ns = {}  # type: Any
 ver_path = convert_path('PixivConstant.py')
 with open(ver_path) as ver_file:
     exec(ver_file.read(), main_ns)

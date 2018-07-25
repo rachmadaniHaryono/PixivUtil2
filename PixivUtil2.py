@@ -26,6 +26,7 @@ import codecs
 import subprocess
 
 from BeautifulSoup import BeautifulSoup
+from typing import Any
 
 if os.name == 'nt':
     # enable unicode support on windows console.
@@ -96,11 +97,11 @@ __config__ = PixivConfig.PixivConfig()
 configfile = "config.ini"
 __dbManager__ = None
 __br__ = None
-__blacklistTags = list()
-__suppressTags = list()
+__blacklistTags = list()  # type: Any
+__suppressTags = list()  # type: Any
 __log__ = PixivHelper.GetLogger()
 __errorList = list()
-__blacklistMembers = list()
+__blacklistMembers = list()  # type: Any
 
 start_iv = False
 dfilename = ""

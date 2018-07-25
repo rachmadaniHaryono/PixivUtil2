@@ -195,4 +195,4 @@ class TestPixivHelper(unittest.TestCase):
 if __name__ == '__main__':
         # unittest.main()
     suite = unittest.TestLoader().loadTestsFromTestCase(TestPixivHelper)
-    unittest.TextTestRunner(verbosity=5).run(suite)
+    unittest.TextTestRunner(verbosity=5).run(suite)  # type: ignore

@@ -16,6 +16,8 @@ import sys
 import json
 import re
 
+from typing import Any
+
 import PixivHelper
 from PixivException import PixivException
 import PixivModelWhiteCube
@@ -31,7 +33,7 @@ class PixivBrowser(mechanize.Browser):
     _config = None
     _isWhitecube = False
     _whitecubeToken = ""
-    _cache = dict()
+    _cache = dict()  # type: Any
     _myId = 0
 
     def __init__(self, config, cookie_jar):

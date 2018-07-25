@@ -46,4 +46,4 @@ class TestPixivModel_WhiteCube(unittest.TestCase):
 if __name__ == '__main__':
         # unittest.main()
     suite = unittest.TestLoader().loadTestsFromTestCase(TestPixivModel_WhiteCube)
-    unittest.TextTestRunner(verbosity=5).run(suite)
+    unittest.TextTestRunner(verbosity=5).run(suite)  # type: ignore

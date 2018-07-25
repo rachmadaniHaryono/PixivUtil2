@@ -41,5 +41,5 @@ class TestPixivDBManager(unittest.TestCase):
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestPixivDBManager)
-    unittest.TextTestRunner(verbosity=5).run(suite)
+    unittest.TextTestRunner(verbosity=5).run(suite)  # type: ignore
     print("================================================================")

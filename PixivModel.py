@@ -16,6 +16,8 @@ from PixivException import PixivException
 from datetime import datetime
 import json
 
+from typing import Any
+
 
 class PixivArtist:
     '''Class for parsing member page.'''
@@ -24,7 +26,7 @@ class PixivArtist:
     artistAvatar = ""
     artistToken = ""
     artistBackground = ""
-    imageList = []
+    imageList = []  # type: Any
     isLastPage = None
     haveImages = None
     totalImages = 0
@@ -233,9 +235,9 @@ class PixivImage:
     imageId = 0
     imageTitle = ""
     imageCaption = ""
-    imageTags = []
+    imageTags = []  # type: Any
     imageMode = ""
-    imageUrls = []
+    imageUrls = []  # type: Any
     worksDate = unicode("")
     worksResolution = unicode("")
     worksTools = unicode("")
@@ -249,7 +251,7 @@ class PixivImage:
     image_response_count = -1
     ugoira_data = ""
     dateFormat = None
-    descriptionUrlList = []
+    descriptionUrlList = []  # type: Any
     __re_caption = re.compile("caption")
 
     def __init__(self, iid=0, page=None, parent=None, fromBookmark=False, bookmark_count=-1, image_response_count=-1,
