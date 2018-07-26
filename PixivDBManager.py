@@ -9,10 +9,15 @@ import os
 import codecs
 from datetime import datetime
 
+import six
+
 from PixivModel import PixivListItem
 import PixivConfig
 import PixivHelper
 script_path = PixivHelper.module_path()
+
+raw_input = six.moves.input
+unicode = six.text_type
 
 
 class PixivDBManager:
