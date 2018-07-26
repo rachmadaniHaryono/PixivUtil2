@@ -52,7 +52,7 @@ class PixivArtist:
                 raise PixivException('Member Error: ' + str(errorMessage), errorCode=PixivException.OTHER_MEMBER_ERROR, htmlPage=page)
 
             # detect if there is server error
-            errorMessage = self.IsServerErrorExist(page)
+            errorMessage = self.IsServerErrorExist(page)  # type: bytes
             if errorMessage is not None:
                 raise PixivException('Member Error: ' + str(errorMessage), errorCode=PixivException.SERVER_ERROR, htmlPage=page)
 
@@ -1200,6 +1200,6 @@ class SharedParser:
         count_badge_span = page.find('span', attrs={'class': 'count-badge'})
         if count_badge_span is not None:
             temp_count = re.findall(r'\d+', count_badge_span.string)
-            if temp_count > 0:
+            if (six.PY2 and temp_count > 0) or (six.PY3 and len(temp_count) > 0):
                 total_images = int(temp_count[0])
         return total_images
