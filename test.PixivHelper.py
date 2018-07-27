@@ -6,14 +6,21 @@ import os
 import unittest
 import json
 
+
+import pytest
+import six
+if six.PY2:
+    from BeautifulSoup import BeautifulSoup
+else:
+    from bs4 import BeautifulSoup
+
 import PixivHelper
 from PixivModelWhiteCube import PixivImage
 from PixivModel import PixivArtist
 import PixivConfig
 
-from BeautifulSoup import BeautifulSoup
 
-import pytest
+unicode = six.text_type
 
 
 class TestPixivHelper(unittest.TestCase):

@@ -5,13 +5,21 @@ from __future__ import print_function
 import sys
 import os
 import unittest
+from PixivModelWhiteCube import PixivImage, PixivArtist
+import six
+if six.PY2:
+    from BeautifulSoup import BeautifulSoup
+else:
+    from bs4 import BeautifulSoup
 
-from BeautifulSoup import BeautifulSoup
 import json
 import pytest
 
 import PixivHelper
 from PixivModelWhiteCube import PixivImage, PixivArtist
+
+
+unicode = six.text_type
 
 
 class TestPixivModel_WhiteCube(unittest.TestCase):

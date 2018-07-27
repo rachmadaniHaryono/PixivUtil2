@@ -5,7 +5,11 @@ import PixivUtil2
 import PixivBrowserFactory
 import PixivConfig
 import getpass
-import mechanize
+import six
+if six.PY2:
+    from mechanize import HTTPError
+else:
+    from six.moves.urllib.error import HTTPError
 
 __config__ = PixivConfig.PixivConfig()
 PixivUtil2.__config__ = __config__

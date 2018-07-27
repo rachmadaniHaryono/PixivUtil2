@@ -6,8 +6,13 @@ from PixivModel import PixivArtist, PixivBookmark, PixivNewIllustBookmark, Pixiv
 from PixivModelWhiteCube import PixivImage
 from PixivBrowserFactory import PixivBrowser
 from PixivException import PixivException
-from BeautifulSoup import BeautifulSoup
-from mechanize import Browser
+import six
+if six.PY2:
+    from BeautifulSoup import BeautifulSoup
+    from mechanize import Browser
+else:
+    from bs4 import BeautifulSoup
+    from mechanicalsoup import StatefulBrowser as Browser
 import os
 import unittest
 
