@@ -38,6 +38,7 @@ from PixivException import PixivException
 import PixivModelWhiteCube
 import PixivModel
 
+unicode = six.text_type
 defaultCookieJar = None
 defaultConfig = None
 _browser = None
@@ -91,11 +92,12 @@ class PixivBrowser(Browser):
 
         # self.set_handle_equiv(True)
         # self.set_handle_gzip(True)
-        self.set_handle_redirect(True)
-        self.set_handle_referer(True)
-        self.set_handle_robots(False)
+        if six.PY2:
+            self.set_handle_redirect(True)
+            self.set_handle_referer(True)
+            self.set_handle_robots(False)
 
-        self.set_debug_http(config.debugHttp)
+            self.set_debug_http(config.debugHttp)
         if config.debugHttp:
             PixivHelper.GetLogger().info('Debug HTTP enabled.')
 
@@ -120,6 +122,18 @@ class PixivBrowser(Browser):
         if defaultCookieJar is None:
             defaultCookieJar = cookielib.LWPCookieJar()
         defaultCookieJar.set_cookie(cookie)
+
+    def open_novisit(self, *args, **kwargs):
+        """Open a URL without visiting it.
+       
+       docs: https://mechanize.readthedocs.io/en/latest/browser_api.html#mechanize.Browser.open_novisit
+       source: https://mechanize.readthedocs.io/en/latest/_modules/mechanize/_mechanize.html#Browser.open_novisit
+        """
+        if six.PY2:
+            return super(Browser, self).open_novisit(*args, **kwargs)
+        if len(args) == 1 and not kwargs:
+            return self.open(args[0].full_url, headers=args[0].headers)
+        raise NotImplementedError('args: [{}], kwargs: [{}]'.format(args, kwargs))
 
     def open_with_retry(self, url, data=None,
                         timeout=_GLOBAL_DEFAULT_TIMEOUT,
@@ -155,9 +169,15 @@ class PixivBrowser(Browser):
             req = urllib2.Request(url)
             req.add_header('Referer', referer)
             try:
-                page = self.open(req)
+                if six.PY2:
+                    page = self.open(req)
+                else:
+                    page = self.open(url, headers={'referer': referer})
                 if returnParsed:
-                    parsedPage = BeautifulSoup(page.read())
+                    if six.PY2:
+                        parsedPage = BeautifulSoup(page.read())
+                    else:
+                        parsedPage = BeautifulSoup(page.text)
                     return parsedPage
                 else:
                     return page
@@ -173,7 +193,10 @@ class PixivBrowser(Browser):
                     print('')
                     retry_count = retry_count + 1
                 else:
-                    raise PixivException("Failed to get page: " + ex.message, errorCode=PixivException.SERVER_ERROR)
+                    if six.PY2:
+                        raise PixivException("Failed to get page: " + ex.message, errorCode=PixivException.SERVER_ERROR)
+                    else:
+                        raise PixivException("Failed to get page: " + str(ex), errorCode=PixivException.SERVER_ERROR)
 
     def fixUrl(self, url, useHttps=True):
         # url = str(url)
@@ -210,10 +233,10 @@ class PixivBrowser(Browser):
             PixivHelper.print_and_log('info', 'Trying to log in with saved cookie')
             self._loadCookie(login_cookie)
             res = self.open('https://www.pixiv.net/mypage.php')
-            resData = res.read()
+            resData = res.read() if six.PY2 else res.text
 
             parsed = BeautifulSoup(resData)
-            self.detectWhiteCube(parsed, res.geturl())
+            self.detectWhiteCube(parsed, res.geturl() if six.PY2 else res.url)
 
             if "logout.php" in resData:
                 PixivHelper.print_and_log('info', 'Login successful.')
@@ -339,7 +362,11 @@ class PixivBrowser(Browser):
         else:
             url = "https://www.pixiv.net/member_illust.php?mode=medium&illust_id={0}".format(image_id)
             # response = self.open(url).read()
-            response = self.getPixivPage(url, returnParsed=False).read()
+            pixiv_page = self.getPixivPage(url, returnParsed=False)
+            if six.PY2:
+                response = pixiv_page.read()
+            else:
+                response = pixiv_page.text
             self.handleDebugMediumPage(response, image_id)
 
             # Issue #355 new ui handler
@@ -398,11 +425,15 @@ class PixivBrowser(Browser):
     def getMemberInfoWhitecube(self, member_id, artist, bookmark=False):
         ''' get artist information using AppAPI '''
         url = 'https://app-api.pixiv.net/v1/user/detail?user_id={0}'.format(member_id)
-        if self._cache.has_key(url):
+        if url in self._cache:
             info = self._cache[url]
         else:
             PixivHelper.GetLogger().debug("Getting member information: %s", member_id)
-            infoStr = self.open(url).read()
+            resp = self.open(url)
+            if six.PY2:
+                infoStr = resp.read()
+            else:
+                infoStr = resp.text
             info = json.loads(infoStr)
             self._cache[url] = info
         artist.ParseInfo(info, False, bookmark=bookmark)

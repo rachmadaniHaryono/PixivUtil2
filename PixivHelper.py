@@ -28,6 +28,7 @@ import shlex
 import six
 
 unicode = six.text_type
+basestring = six.string_types
 Logger = None
 _config = None
 
@@ -434,12 +435,19 @@ def dumpHtml(filename, html):
 
     if isDumpEnabled:
         try:
-            dump = file(filename, 'wb')
-            dump.write(str(html))
-            dump.close()
+            if six.PY2:
+                dump = file(filename, 'wb')
+                dump.write(str(html))
+                dump.close()
+            else:
+                with open(filename, 'wb') as dump:
+                    dump.write(str(html))
             return filename
         except Exception as ex:
-            print_and_log('error', ex.message)
+            if six.PY2:
+                print_and_log('error', ex.message)
+            else:
+                print_and_log('error', str(ex))
     else:
         print_and_log('info', 'No Dump')
     return ""
@@ -584,7 +592,10 @@ def downloadImage(url, filename, res, file_size, overwrite):
         if not os.path.exists(directory):
             print_and_log('info', u'Creating directory: ' + directory)
             os.makedirs(directory)
-        save = file(filename + '.pixiv', 'wb+', 4096)
+        if six.PY2:
+            save = file(filename + '.pixiv', 'wb+', 4096)
+        else:
+            save = open(filename + '.pixiv', 'wb+', 4096)
     except IOError:
         print_and_log('error', u"Error at download_image(): Cannot save {0} to {1}: {2}".format(url, filename, sys.exc_info()))
 
@@ -592,7 +603,10 @@ def downloadImage(url, filename, res, file_size, overwrite):
         filename = os.path.split(url)[1]
         filename = filename.split("?")[0]
         filename = sanitizeFilename(filename)
-        save = file(filename + '.pixiv', 'wb+', 4096)
+        if six.PY2:
+            save = file(filename + '.pixiv', 'wb+', 4096)
+        else:
+            save = open(filename + '.pixiv', 'wb+', 4096)
         print_and_log('info', u'File is saved to ' + filename)
 
     # download the file
@@ -601,7 +615,10 @@ def downloadImage(url, filename, res, file_size, overwrite):
     print('{0:22} Bytes'.format(curr), end=' ')
     try:
         while True:
-            save.write(res.read(PixivConstant.BUFFER_SIZE))
+            if six.PY2:
+                save.write(res.read(PixivConstant.BUFFER_SIZE))
+            else:
+                save.write(res.content)
             curr = save.tell()
             print_progress(curr, file_size)
 

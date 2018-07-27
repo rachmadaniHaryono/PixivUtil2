@@ -26,6 +26,7 @@ import codecs
 import subprocess
 import six
 
+raw_input = six.moves.input
 if six.PY2:
     from BeautifulSoup import BeautifulSoup
 else:
@@ -242,7 +243,10 @@ def download_image(url, filename, referer, overwrite, max_retry, backup_old_file
                 res = __br__.open_novisit(req)
                 if file_size < 0:
                     try:
-                        file_size = int(res.info()['Content-Length'])
+                        if six.PY2:
+                            file_size = int(res.info()['Content-Length'])
+                        else:
+                            file_size = int(res.headers['Content-Length'])
                     except KeyError:
                         file_size = -1
                         PixivHelper.print_and_log('info', "\tNo file size information!")
@@ -730,7 +734,10 @@ def process_image(artist=None, image_id=None, user_dir='', bookmark=False, searc
                             del parse_big_image
                         break
                     except Exception as ex:
-                        __errorList.append(dict(type="Image", id=str(image_id), message=ex.message, exception=ex))
+                        if six.PY2:
+                            __errorList.append(dict(type="Image", id=str(image_id), message=ex.message, exception=ex))
+                        else:
+                            __errorList.append(dict(type="Image", id=str(image_id), message=str(ex), exception=ex))
                         PixivHelper.print_and_log('info', 'Image ID (' + str(image_id) + '): ' + str(traceback.format_exc()))
                         try:
                             if parse_big_image is not None:
