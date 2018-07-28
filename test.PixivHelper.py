@@ -5,7 +5,7 @@ from __future__ import print_function
 import os
 import unittest
 import json
-
+from functools import partial
 
 import pytest
 import six
@@ -13,6 +13,7 @@ if six.PY2:
     from BeautifulSoup import BeautifulSoup
 else:
     from bs4 import BeautifulSoup
+    BeautifulSoup = partial(BeautifulSoup, features='lxml')
 
 import PixivHelper
 from PixivModelWhiteCube import PixivImage

@@ -16,5 +16,5 @@ install:
 # command to run tests
 script:
   - ln -s test.PixivModel.py test_PixivModel.py
-  - pytest -v ./test_*
+  - pytest -v -W error::UserWarning ./test_*
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then mypy --ignore-missing-imports *.py; fi

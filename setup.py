@@ -76,6 +76,7 @@ if ranWithPy3:
         'beautifulsoup4>=4.6.0',
         'demjson>=2.2.4',
         'imageio>=2.1.2',
+        'lxml==4.1.1',
         'MechanicalSoup>=0.10.0',
         'numpy>=1.14.2',
         'Pillow>=4.3.0',

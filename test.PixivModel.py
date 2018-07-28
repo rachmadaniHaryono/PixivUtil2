@@ -2,6 +2,8 @@
 # -*- coding: UTF-8 -*-
 from __future__ import print_function
 
+from functools import partial
+
 from PixivModel import PixivArtist, PixivBookmark, PixivNewIllustBookmark, PixivTags, PixivGroup
 from PixivModelWhiteCube import PixivImage
 from PixivBrowserFactory import PixivBrowser
@@ -13,6 +15,7 @@ if six.PY2:
 else:
     from bs4 import BeautifulSoup
     from mechanicalsoup import StatefulBrowser as Browser
+    BeautifulSoup = partial(BeautifulSoup, features='lxml')
 import os
 import unittest
 

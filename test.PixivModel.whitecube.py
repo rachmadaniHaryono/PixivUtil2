@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 from __future__ import print_function
 
+from functools import partial
 import sys
 import os
 import unittest
@@ -11,6 +12,7 @@ if six.PY2:
     from BeautifulSoup import BeautifulSoup
 else:
     from bs4 import BeautifulSoup
+    BeautifulSoup = partial(BeautifulSoup, features='lxml')
 
 import json
 import pytest
