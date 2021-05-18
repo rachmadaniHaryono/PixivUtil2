@@ -1,45 +1,44 @@
-#!/c/Python27/python.exe
+#!C:/Python37-32/python
 # -*- coding: UTF-8 -*-
-from __future__ import print_function
 
+import PixivConstant
 from PixivDBManager import PixivDBManager
-from PixivModel import PixivListItem
-from PixivConfig import PixivConfig
+from PixivListItem import PixivListItem
 
-import unittest
 LIST_SIZE = 9
-config = PixivConfig()
-config.loadConfig()
+root_directory = '.'
+PixivConstant.PIXIVUTIL_LOG_FILE = 'pixivutil.test.log'
 
 
-class TestPixivDBManager(unittest.TestCase):
-    def testImportListTxt(self):
-        DB = PixivDBManager(target="test.db.sqlite")
+class TestPixivDBManager(object):
+    def test_ImportListTxt(self):
+        DB = PixivDBManager(root_directory=".", target="test.db.sqlite")
         DB.createDatabase()
-        l = PixivListItem.parseList("test.list.txt", config.rootDirectory)
-        result = DB.importList(l)
-        self.assertEqual(result, 0)
+        members = PixivListItem.parseList("test.list.txt", root_directory)
+        result = DB.importList(members)
+        # self.assertEqual(result, 0)
+        assert result == 0
 
-    def testSelectMembersByLastDownloadDate(self):
-        DB = PixivDBManager(target="test.db.sqlite")
+    def test_SelectMembersByLastDownloadDate(self):
+        DB = PixivDBManager(root_directory=".", target="test.db.sqlite")
         DB.createDatabase()
-        l = PixivListItem.parseList("test.list.txt", config.rootDirectory)
         result = DB.selectMembersByLastDownloadDate(7)
-        self.assertEqual(len(result), LIST_SIZE)
+        # self.assertEqual(len(result), LIST_SIZE)
+        assert len(result) == LIST_SIZE
         for item in result:
             print(item.memberId, item.path)
 
-    def testSelectAllMember(self):
-        DB = PixivDBManager(target="test.db.sqlite")
+    def test_SelectAllMember(self):
+        DB = PixivDBManager(root_directory=".", target="test.db.sqlite")
         DB.createDatabase()
-        l = PixivListItem.parseList("test.list.txt", config.rootDirectory)
         result = DB.selectAllMember()
-        self.assertEqual(len(result), LIST_SIZE)
+        # self.assertEqual(len(result), LIST_SIZE)
+        assert len(result) == LIST_SIZE
         for item in result:
             print(item.memberId, item.path)
 
 
-if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestPixivDBManager)
-    unittest.TextTestRunner(verbosity=5).run(suite)
-    print("================================================================")
+# if __name__ == '__main__':
+#     suite = unittest.TestLoader().loadTestsFromTestCase(TestPixivDBManager)
+#     unittest.TextTestRunner(verbosity=5).run(suite)
+#     print("================================================================")

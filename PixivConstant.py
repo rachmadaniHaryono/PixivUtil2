@@ -1,23 +1,8 @@
-# -*- coding: UTF-8 -*-
-# pylint: disable=I0011, C, C0302
+# -*- coding: utf-8 -*-
 
-
-PIXIVUTIL_VERSION = '20181105'
+PIXIVUTIL_VERSION = '20210421'
 PIXIVUTIL_LINK = 'https://github.com/Nandaka/PixivUtil2/releases'
 PIXIVUTIL_DONATE = 'https://bit.ly/PixivUtilDonation'
-PIXIV_URL = 'https://www.pixiv.net'
-PIXIV_URL_SSL = 'https://www.pixiv.net/login.php'
-PIXIV_CSS_LIST_ID = 'display_works'
-PIXIV_CSS_PROFILE_NAME_CLASS = 'f18b'
-PIXIV_CSS_IMAGE_TITLE_CLASS = 'works_data'
-PIXIV_CSS_TAGS_ID = 'tags'
-PIXIVUTIL_MODE_UPDATE_ONLY = '1'
-
-# Login Settings
-PIXIVUTIL_MODE_OVERWRITE = '2'
-PIXIV_LOGIN_URL = '/login.php'
-PIXIV_FORM_NUMBER = 1
-PIXIV_FORM_NUMBER_SSL = 1
 
 # Log Settings
 PIXIVUTIL_LOG_FILE = 'pixivutil.log'
@@ -34,6 +19,11 @@ PIXIVUTIL_KEYBOARD_INTERRUPT = 3
 PIXIVUTIL_SKIP_DUPLICATE = 4
 PIXIVUTIL_SKIP_LOCAL_LARGER = 5
 PIXIVUTIL_CHECK_DOWNLOAD = 6
+PIXIVUTIL_SIZE_LIMIT_LARGER = 7
+PIXIVUTIL_SIZE_LIMIT_SMALLER = 8
+PIXIVUTIL_SKIP_DUPLICATE_NO_WAIT = 9
 PIXIVUTIL_ABORTED = 9999
+
+HTML_TEMPLATE = '<!DOCTYPE html> <html lang="ja"> <head> <title>%artistName% - %imageTitle%</title> <meta charset="utf-8"> <style type="text/css"> *{margin:0px; padding:0px; max-width:100%; overflow:auto;} body{text-align:center; background-color:#f3f5f8;} h1, h2, h5, p{text-align:left;} h1, h2, h5, p{padding-left:4%; padding-right:4%;} p{word-break:break-word; padding-top:0.5em; padding-bottom:0.5em;} span{padding:0px;} .title{margin-top:2rem; margin-bottom:2rem;} a{margin:auto;} .root{max-width:1280px; margin:auto; background-color:#ffffff;} .caption{display:grid;} .non-article.main, .non-article.images{position:fixed; overflow-y:scroll; background-color:#ffffff;} .non-article.main{top:0px; left:0px; height:100%; width:360px;} .non-article.images{top:0px; left:360px; height:100%;} @media screen and (max-aspect-ratio:4/5){.non-article.main{height:25%; width:100%;} .non-article.images{top:25%; left:0px; height:75%; width:100%;}} </style> </head> <body> <div class="root"> <div class="main"> %coverImage% <div class="title"> <h1>%imageTitle%</h1> <h5>%worksDate%</h5> </div> %body_text(article)% %text(non-article)% </div> %images(non-article)% </div> </body> </html>'
 
 BUFFER_SIZE = 8192

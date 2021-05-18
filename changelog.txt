@@ -1,3 +1,357 @@
+20210421
+- Implement #930: download full size image for fanbox cover.
+- Fix #929: update fanbox post parser for post type = entry.
+- Merge Show URL for oauth (#931) by Jhyrachy.
+
+20210326
+- Implement #706: add novel support.
+- Merge Update PixivDBManager.py (#910) by amatuerCoder.
+- Merge Update PixivBrowserFactory.py (#908) by amatuerCoder.
+- Merge Fix #889 #899 (#903) by amatuerCoder.
+- Update test script for PixivBrowserFactory.
+- Implement #928: allow to use image tags for filtering when downloading user bookmark (option 6).
+- Merge Add config option to ignore beta versions (#923) by Terryble2
+- Merge Bad chars enhancement (#920) by amatuerCoder.
+- Update error message for #914
+
+20210128
+- Fix Issue #878: update search by tag parser to handle missing 'isAdContainer'.
+- Fix Issue #877: update fanbox parser for missing embedId.
+- Fix Issue #881: change content_provider.json path resolution.
+- Partial Implement #873: store member token in db.
+- Fix Issue #880: update batch handler based on changes from byjtje.
+- Change from re.match() to re.search() for extension filter for batch job.
+- Fix Issue #882: trying to load from None object.
+- Implement #891: add new filename format '%bookmarks_group%', refer to https://dic.pixiv.net/a/users%E5%85%A5%E3%82%8A for grouping rule.
+- Implement #885: allow to configure the parameter to convert gif and apng.
+- Fix Issue #893: fix useTagsAsDir logic.
+- Fix Issue #892: PixivSketch now load all images, including R-18 (follow your settings in the website).
+- Merge Fix #873 and #886 (#888) by amatuerCoder.
+- Fix Issue #883: update parser for avatar image.
+- Merge Remove double slash (#894) by Yuki.
+- Merge Fix (#897) by amatuerCoder.
+- Update cloudscraper to 1.2.54
+
+20201130
+- Merge Added series JSON and an option to download it, expended %manga_series% to work with all modes, added an option for untouched JSON (#855) by byjtje. 
+- Merge fix bad standard config value (#857) by byjtje.
+- Fix Issue #860: follow numberofpage in config.ini
+- Merge Add config option to not download the cover for fanbox (#865) by qazmlpok.
+- Merge Allow pasting of urls for input (#867) by byjtje.
+- Update #867 to handle pixiv sketch and fanbox username with symbol.
+- other small fixes.
+
+20201031
+- Merge Fix bug of header (#853) by markhuang3310.
+- Merge Added Series Info and conditionals to JSON/txt, and removed an unneccesary string format (#851) by byjtje.
+- Update readme.md (please read...)
+- monkey-patch cloudscraper method for browsers.json filepath resolution.
+- update cacert.pem path resolution to count if the exe being called from different folder
+
+20201025
+- Merge To be consistent with PixivBatchHandler. Fix #844 (#845) by fireattack.
+- Implement #842: to use cacert.pem from the root directory if frozen.
+  - need to modify cloudscraper library to inherit 'verify' attribute from given Session object
+- Merge Sketch default date fix (#841) by byjtje
+
+20201024
+- add cmd logging when converting ugoira.
+- Implement #406: add option 13: download by manga series
+  - Specific for filenameMangaFormat in Manga Series mode (option 13):
+    -> %manga_series_order%
+       the order in the manga series.
+    -> %manga_series_id%
+       original manga series id.
+    -> %manga_series_title%
+       original manga series title, different from work title.
+    -> %manga_series_desc%
+       original manga series description, different from work description.
+- Merge #806 fix for Fanbox EndPage input parameter (#808) by amatuerCoder.
+- Implement #812: handle different Sketch and Pixiv artist id.
+  - add new filename format `%sketch_member_id%` for PixivSketch
+- Fix Issue #822: Update parser for user's image bookmark.
+- Fix Issue #827: Update parser to NOT use AppAPI/oAuth to get member token.
+- Fix Issue #824: Update argument parser for option 6.
+- Add new configuration `checkLastModified` in `[DownloadControl]` for Issue #807
+  -  This will compare last-modified time with works date, require `setlastmodified = True` in config.ini to work properly.
+- Throw error if cannot get the user id during login, related to #831
+- Merge Adding Filename option for Sketch and fixing dates and Unix filenames (#836) by byjtje
+  - change default dateFormat to %Y-%m-%d (YYYY-MM-DD)
+- Fix Issue #838: delete zip/ugoira handling.
+- Add new start parameter:
+  - --start_date and --end_date for option 3, 7, and 9
+  - --tag_sort_order to set sorting order for option 3 and 7
+- Add check if ffmpeg exist or not if ugoira conversion is enabled.
+- Implement #837: add new config to skip downloading if `alwaysCheckFileSize = True` and remote file size is unknown => skipUnknownSize.
+- Update #814: replace requests with cloudscrapper for oAuth handling.
+- Implement #834: additional tag sorting order for premium users.
+  - order=popular_d (overall), popular_male_d (popular among male users) and popular_female_d.
+- Merge Fix error in PixivHelper.py:173 - TypeError expects String, not Int (#832) by Jared Shields.
+- update test cases and libraries.
+
+20201006
+- Implement #797: reload blacklist on after reloading main menu.
+- Implement #793: allow to download sketch when using option 1.
+- Update #796: change apng converter to use ffmpeg.
+- Fix Issue #795: handle no avatar/bg.
+- Implement #802: use ffmpeg for converting to gif.
+- Merge Implemented #804 download FANBOX from list file (#805) by amatuerCoder
+  - Added new option `listPathFanbox`
+- IMPORTANT: changes the command line parameters, run with --help for more details
+- Update readme.md
+
+20200915
+- Fix Issue #778: "'list' object has no attribute 'startswith'" process_tags_list().
+- Update #777: add s_tag and date_d param value
+- Fix Issue #772: Pixiv Sketch tz_info
+- Update #768: enhance the error message
+- Implement #726: file extension filter for batch job
+- Merge: Disable blacklist for the download by image id option (#791) by byjtje.
+- Merge: Update PixivBrowserFactory.py (#790) by amatuerCoder.
+- Merge: Fixed avatar/background default file extension and background urlfilename (#789) by byjtje.
+- Implement #782: add filename in the warning message.
+- Merge: Removed unneccessary check from check_version and made the browser opening opt-in (#779) by byjtje.
+
+20200824
+- Implement #650: open default browser to release page if checkNewVersion=True in config.ini
+- Merge: Add run on repl.it badge to README (#770) by cyleja1234
+- Merge: Added date update for artists with no pictures (#766) by byjtje
+- Merge: Switched the check from last image to last downloaded to avoid always checking when it doesn't download any images (#764) by byjtje
+- Merge: Minor changes to PixivFanboxHandler, PixivUtil2, readme (#763) by amatuerCoder
+- Merge: Regex Title Filtering + Date updates and a few minor changes (#759) by byjtje
+- Merge: Update readme.md (#754) by amatuerCoder
+- Merge: proper checkUpdatedLimit check  (#753) by byjtje
+- Implement #749: Pixiv Sketch support.
+
+20200726
+- Update #592: dns over socks proxy handling.
+- Merge: Fix shebang of PixivUtil2.py (#739) by RoestVrijStaal
+- Merge: Dockerfile (#740) by DenDen047
+- Merge: Fixed handle tags (#741) by byjtje
+- Fix Issue #743: add error message in config item, add colorama.
+- Implement #718: add ffmpegExt in config.ini to control the file extension.
+- Merge: Update Fanbox Handling (#746) by amatuerCoder
+- Refactor process FANBOX to PixivFanboxHandler
+- Add update check for refresh_token for writing config.ini 
+- Merge: Update PixivFanboxHandler.py (#747) by amatuerCoder
+
+20200712
+- Merge Added a filter for Titles and added a condition to prevent unnecessary blacklist checks (#737) by byjtje.
+- Implement #716: include soundcloud provider support.
+- Implement : add joboption for r18mode for batch.
+- Implement #719: update message for menu_download_from_online_image_bookmark().
+- Fanbox related fixes by amatuerCoder.
+- update readme.md.
+
+20200524
+- Fix #697 bookmark filtering for premium user
+- Fix #713 allow %search_tag% format in option 6
+- Merged HTML style adjustment for FANBOX (#711) by amatuerCoder.
+
+20200502
+- Merged FANBOX download enhancement (#680) by amatuerCoder.
+- Merged Optimize Query `insertMangaImage` & Typo Fix (#678) by Jared Shields.
+- Merged Simplify(?) codes with reflection(?) thoughts (#676) by amatuerCoder.
+- Fix Issue #684: cannot use pixiv and fanbox cookie together.
+- Fix Issue #687: merged When artist is None (#683) by amatuerCoder.
+- Merged Indent/print-out adjustment & new method to update FANBOX cookie (#694) by amatuerCoder.
+- Implement #197: new option 'b' to download from batch_job.json
+  See https://github.com/Nandaka/PixivUtil2/wiki/Using-Batch-Job-(Experimental) for the sample template.
+- Refactor out codes for handling batch job.
+- Fix Issue #696: wrong import for PixivException
+- Merged FANBOX database patch (#695) by amatuerCoder.
+
+202000424
+- Try to fix #658, #662: login detection.
+- Try to fix #654: explicitly call close() when writing config.ini.tmp
+- Implement #652: Enable filter by bookmark count for Pixiv Premium.
+- Merged #656 (#659) by amatuerCoder: Download fanbox articles in HTML.
+  - set writeHtml = True to enable.
+  - modifieable template based on pattern.html
+- Merged #660 by wmjdgla: Simplified print_progress and fixed jerky progress bar for indeterminate case.
+- Merged #647 by Alex: Refactor sanitize_filename in PixivHelper.
+- Merged #671 by amatuerCoder: Html improvements for Fanbox.
+- Merged #670 by Jared Shields: Update autoAddMember.
+- Fix Issue #663: handle directory name for filename formats.
+- Merged #661 by amatuerCoder: Added logic for links if links token was in p blocks
+- Update test cases and other small fixes (see the commit history for more details).
+
+20200307
+- Fix Issue #648: Can't download Ugoiras when "downloadresized" is active.
+
+20200228
+- Fix Issue #641: update API endpoints for Pixiv FANBOX.
+- Implement #639: add option to download the resized image, rather than original size.
+                  set `downloadResized = True` at `[DownloadControl]` section in config.ini to enable.
+
+20200125 - Happy CNY 2020!
+- Update #623: change default local to '', if exists then use the current locale.
+- Update test cases.
+- Implement #625: Add option to automatically add downloaded member to DB.
+                  Set 'autoaddmember = True' in config.ini to enable.
+- Implement #526: Add menu to import list.txt on demand.
+- Implement #575: Add option for filename format for manga's info.
+                  Configure 'filenamemangainfoformat' in config.ini to enable.
+- Update #622: use new API endpoint for option 5.
+- Fix Issue #627: sanizite trailing '.' in the filename.
+- Fix Issue #626: remove redundant message for option 4.
+- Update #611: avoid duplicate file for Pixiv FANBOX.
+
+20200112
+- Fix Issue #611: updated FANBOX post parser to support old post.
+- Fix Issue #612: moved wait statement due to #609 changes.
+- Fix Issue #613: updated logic check due to #609 changes.
+- Merge #615 and #617: updated utf8 supported FS check on linux.
+- Fix Issue #618: update requirements.txt, replace socksipy-branch to PySocks.
+- Fix Issue #622, #623, and Merge #624: update bookmark and image bookmark handler.
+
+20200101 - Happy New Year!
+- Fix Issue #607: fix db path for parseBookmark call.
+- Fix Issue #608: handle user suspended for Fanbox.
+- Implement #567: add minFileSize and maxFileSize in config.ini, set 0 to disable.
+- Reorder some settings in config.ini to new section [DownloadControl]
+  - overwrite = False
+  - backupOldFile = False
+  - dayLastUpdated = 7
+  - alwaysCheckFileSize = False
+  - checkUpdatedLimit = 0
+  - useBlacklistTags = False
+  - dateDiff = 0
+  - enableInfiniteLoop = False
+  - useBlacklistMembers = False
+- Implement #609: separate 'checkUpdatedLimit' and 'alwaysCheckFileSize' validation.
+- Fix Issue #606: set encoding to utf8.
+- Implement #595: implement SSL bypass for most connection.
+
+20191221
+- Fix Issue #600: update for login detection.
+
+20191218
+- Upgrade to python 3.8.0
+- Fix Issue #601: update bookmark image parser.
+- Fix Issue #593: handle memory leak, require python 3.8.0
+- Implement #597: update fanbox parser to ensure image is saved on order by amatuerCoder.
+- Update test cases.
+
+20191215
+- Fix Issue #594: download by tag.
+- Fix Issue #592: update socks proxy handler.
+- Fix Issue #590: update webm creation handler.
+- Fix Issue #591: update apng creation handler.
+
+20191214
+- Moved to python 3.
+- Fix Issue #580: update error handler for suspended user.
+- Fix Issue #579: update remote filesize parser.
+- Fix Issue #586: update content_provider.json for vimeo.
+
+20191118
+- Merged #571: fix password check logic.
+- Merged #572: fix Issue #565 with negative time zone offset.
+- Implement #569: Add delay for downloading bookmark pages.
+
+20191116
+- Fix Issue #567: add try-catch for suspended user for FANBOX.
+- Fix Issue #568: update post counter limit to 60.
+
+20191111
+- Fix Issue #550: update download by tag.
+- Fix Issue #548: encode filename to utf-8 if required.
+- Fix Issue #540: skip password protected zip file checking.
+- Update #505: update error message for reCAPTCHA.
+- Implement #544: support for FANBOX post type = entry.
+- Fix Issue #556: update parser for image and member.
+- Fix Issue #558: update write json function.
+- Fix Issue #559: fix tags encoding for option 10.
+- Fix Issue #555: skip import to db if list.txt doesn't exists.
+- Merge #563: perform FS with utf8 support check only once.
+- Fix Issue #562: Fix encoding when writing info file.
+
+20190919
+- Fix Issue #530: update OAuth login header.
+
+20190907b
+- Implement #518: show asterisk '*' when entering password on console for Windows.
+- Implement #521: skip tags if exceeding limit defined in 'checkUpdatedLimit'. 'alwaysCheckFileSize' need to be disabled.
+- Merge #513 and #519
+- Fix Issue #522: rearrange import for getpass.
+
+20190712
+- Implement #490: Show current and total member id in the title.
+- Fix Issue #503: skip remote file size if server return error 404 or 500.
+- Fix Issue #508: update logic for background image download.
+
+20190617-beta1
+- Fix Issue #500: add 'google_forms' for embed provider and update max page parser.
+- Update the embedData parser to use configuration in content_provider.json.
+
+20190606
+- Fix Issue #495: Update FANBOX parser for supported artist.
+
+20190529
+- Fix Issue #494: update fanbox next page url handling.
+- Add option to skip SSL verification for OAuth (useful in debugging).
+
+20190523
+- Update #493: update fanbox parser to support vimeo content provider.
+
+20190523
+- Implement #493: update fanbox parser to support fanbox content provider.
+
+20190501
+- Fix Issue #483: handle oAuth to get the member information for FANBOX, use WEB-RPC to get member info if image id available.
+- Fix Issue #481: update write image info for json.
+- Fix Issue #485: update parser for sorting parameter.
+- Update readme.txt
+- Update requirements for running from source code.
+
+20190416
+- Implement #468: add sorting order for download bookmarked images.
+- Implement #480: update API url.
+
+20190401
+- Implement #476: FANBOX support for video post.
+
+20190321
+- Update #447: change filenameMangaFormat to filenameformat.
+
+20190319
+- Implement #475: support youtube for embedMap.
+- Update #447: allow to write info text even if no images.
+
+20190316
+- Implement #447: Write FANBOX post info to text file.
+
+20190301
+- Implement #470: add support for embedMap for twitter.
+- Fix Issue #472: Update search by tags parser for null illustId.
+
+20190212
+- Fix Issue #466: Update handler for deleted member.
+- Fix Issue #467: Add retry for pixiv FANBOX handler.
+
+20190120
+- Fix Issue #461: ugoira to gif.
+
+20190119
+- Fix Issue #457: update ugoira handler.
+
+20190108
+- Implement #455: Add Animated WebP support for ugoira.
+- Implement #451: Update file already downloaded check for ugoira.
+- Move ugoira related configuration to separate section in config.ini
+- Change the default parameter for WebM creation to '-lossless 1 -vsync 2 -r 999' to support variable fps.
+
+20181212
+- Implement #445: update parser for FANBOX post.
+- Implement #449: enable time format for filename format=%date_fmt{format}%
+- Implement #451: update ugoira creation handler if zip file already exists.
+
+20181121
+- Implement #438: update Fanbox parser for article post.
+- Update test script for pytest.
+- Update readme.txt.
+
 20181105
 - Fix Issue #432: Fix parser for suspended users.
 - Fix Issue #429: Fix parser for user background image.

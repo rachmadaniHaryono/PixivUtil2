@@ -1,7 +1,8 @@
 ### Prerequisites
 
-* [ ] Did you read FAQ section?
+* [ ] Did you read FAQ section in [readme.md](https://github.com/Nandaka/PixivUtil2/blob/master/readme.md)?
 * [ ] Did you test with the latest [releases](https://github.com/Nandaka/PixivUtil2/releases "latest releases") or [commit](https://github.com/Nandaka/PixivUtil2/commits/master "latest commit") ?
+* [ ] Did you search for existing issues in [Issues](https://github.com/Nandaka/PixivUtil2/issues)?
 
 ### Description
 
@@ -20,3 +21,4 @@
 ### Versions
 
 You can get this information from executing `PixivUtil2.py --help`.
+Latest version available in https://github.com/Nandaka/PixivUtil2/releases
