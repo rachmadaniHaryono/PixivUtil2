@@ -1,6 +1,6 @@
 # Requirements:
 - Running from Windows binary:
-  - minimum Windows 7 SP1 with latest updates installed.
+  - minimum Windows 10 with latest updates installed.
 
 - Running from source code:
   - Python 3.8.0+ (https://www.python.org/)
@@ -9,6 +9,7 @@
 
 - Dependent software
   - FFmpeg (https://www.ffmpeg.org/) - used for converting ugoira to video.
+  - [VC++ Redistributable](https://visualstudio.microsoft.com/downloads/#microsoft-visual-c-redistributable-for-visual-studio-2019) - Needed for pyexiv2 to write XMP metadata in Windows (if enabled).
 
 # Capabilities:
 - Download by member_id
@@ -29,6 +30,7 @@
 - Download by artist/creator id (FANBOX)
 - Download by post id (FANBOX)
 - Download from followed artists (FANBOX)
+- Re-encoding of all ugoira present in folder
 - Batch Download from batch_job.json (experimental)
   See https://github.com/Nandaka/PixivUtil2/wiki/Using-Batch-Job-(Experimental)
 - Manage database:
@@ -36,6 +38,7 @@
   - Show all downloaded images
   - Export list (member_id only)
   - Export list (detailed)
+  - Export local database (image_id)
   - Show member by last downloaded date
   - Show image by image_id
   - Show member by member_id
@@ -48,6 +51,8 @@
   - Export FANBOX post list
   - Delete FANBOX download history by member_id
   - Delete FANBOX download history by post_id
+  - Delete Sketch download history by member_id
+  - Delete Sketch download history by post_id
   - Clean Up Database (remove db entry if downloaded file is missing)
 - Export user bookmark (member_id) to a text files.
 
@@ -92,13 +97,12 @@ Q3. I cannot login to Pixiv!
       1. Open Firefox.
       2. Go to Pixiv website and login, remember to enable [Remember Me]
           check box.
-      3. Right click the page and select View Page Info.
-      4. Click the Security tab.
-      5. Click the View Cookies button.
-      6. Look for Cookie named = PHPSESSID.
-      7. Copy the content value.
-      8. Open config.ini, go to [Authentication] section, paste the value
-          to cookie, set keepsignedin = 1.
+      3. Press F12 to open Developer Tools, and select the Storage tab.
+      4. Click the Cookies and select for the pixiv.net.
+      5. Look for Cookie named = PHPSESSID.
+      6. Copy the content value. https://imgur.com/a/BppHOoQ
+      7. Open config.ini, go to [Authentication] section, paste the value
+         to cookie. https://imgur.com/VB2g3qn
 
 Q4. PixivUtil working from local terminal on Linux box but not working when I
     used SSH with PuTTY!
@@ -146,6 +150,10 @@ Q9. The downloaded images are corrupted, how to redownload it again?
       
 Q10. I got this error またはメールアドレス、パスワードが正しいかチェックしてください。
     - Use your email address for the username, or check your password in config.ini
+
+Q11. Older windows support (e.g. Win7)?
+    - You can try to run from source code with the latest supported python 3.x.
+      See the instruction here: https://github.com/Nandaka/PixivUtil2/wiki/IDE-Enviroment-(Windows)
 
 ```
 ## B.Bugs/Source Code/Supports
@@ -259,7 +267,7 @@ Please refer run with `--help` for latest information.
                             (required: Group ID, limit, and process external[y/n])
                         13 - Download by Manga Series ID
                             (required: Manga Series ID separated by space
-                             optional: --sp=START_PAGE, and --ep=END_PAGE))
+                            optional: --sp=START_PAGE, and --ep=END_PAGE)
                         f1 - Download from supported artists (FANBOX)
                             (optional: End Page)
                         f2 - Download by artist/creator id (FANBOX)
@@ -273,11 +281,13 @@ Please refer run with `--help` for latest information.
                             (optional: End page, path to list)
                         b - Batch Download from batch_job.json (experimental)
                             (optional: --bf=BATCH_FILE)
+                        l - Export local database image_id/post_id
+                            (required: --up=USE_PIXIV, and --uf=USE_FANBOX, and --us=USE_SKETCH)
                         e - Export online bookmark
-                            (required: -p BOOKMARK_FLAG [y/n/o] for private bookmark
-                             optional: filename)
+                            (required: -p BOOKMARK_FLAG [y/n/o] for private bookmark,
+                             optional: --ef=EXPORT_FILENAME)
                         m - Export online user bookmark
-                            (required: member_id, optional: followed by filename)
+                            (required: member_id, optional: --ef=EXPORT_FILENAME)
                         d - Manage database
   -x, --exitwhendone    Exit programm when done.
                         (only useful when DB-Manager)
@@ -389,9 +399,9 @@ Please refer run with `--help` for latest information.
 - proxyaddress
 
   Proxy server address, use this format:
-  - http://<username>:<password>@<proxy_server>:<port> or
-  - socks5://<username>:<password>@<proxy_server>:<port> or
-  - socks4://<username>:<password>@<proxy_server>:<port>
+  - `http://<username>:<password>@<proxy_server>:<port>` or
+  - `socks5://<username>:<password>@<proxy_server>:<port>` or
+  - `socks4://<username>:<password>@<proxy_server>:<port>`
 - useragent
   
   Browser user agent to spoof. You can check it from https://www.whatismybrowser.com/detect/what-is-my-user-agent
@@ -509,12 +519,21 @@ Please refer run with `--help` for latest information.
 
   Set to `True` to export the series information to JSON.
   The filename is following `filenameSeriesJSON` + .json.
+- writeImageXMP
+
+  Set to `True` to export the image information to a .XMP sidecar file, this does not add XMP metadata to the image header.
+- writeImageXMPPerImage
+
+  Set to `True` to export the image information to a .XMP sidecar file, one per image in the album. The data contained within the file is the same but some software requires matching file names to detect the metadata. If set to `True`, then `writeImageXMP` is ignored.
 - verifyimage
 
   Do image and zip checking after download. Set the value to `True` to enable.
 - writeUrlInDescription
 
   Write all url found in the image description to a text file. Set to `True` to enable. The list will be saved to to the application folder as url_list_<timestamp>.txt
+- stripHTMLTagsFromCaption
+
+  Remove all HTML tags and their contents from the image caption/description when writing metadata to files. The contents of any links will be lost, so consider enabling writeUrlInDescription to retain them.
 - urlBlacklistRegex
   
   Used to filter out the url in the description using regular expression.
@@ -527,6 +546,9 @@ Please refer run with `--help` for latest information.
 - useLocalTimezone
 
   Use local timezone when setting last modified timestamp/works date.
+- defaultSketchOption
+
+  Skip the "Include Pixiv Sketch" prompt when downloading by `member_id` option by using a default option. Set the value to `y` to always include sketches or `n` to exclude sketches from the download.
 
 ## [DownloadControl]
 - minFileSize
@@ -702,7 +724,7 @@ filenameFormatFanboxCover, filenameFormatFanboxContent and filenameFormatFanboxI
 Available for filenameFormat and filenameMangaFormat:
 ```
 -> %image_id%
-   Image id, in number.
+   Image id, in number. (Post id for FANBOX and sketches)
 -> %title%
    Image title, usually in japanese character.
 -> %tags%
@@ -725,9 +747,9 @@ Available for filenameFormat and filenameMangaFormat:
 -> %page_big%
    for manga mode, add big in the filename.
 -> %page_index%
-   for manga mode, add page number with 0-index.
+   for manga mode, add page number with 0-index. It will auto-pad with 0 based on the total count.
 -> %page_number%
-   for manga mode, add page number with 1-index.
+   for manga mode, add page number with 1-index. It will auto-pad with 0 based on the total count.
 -> %bookmark%
    for bookmark mode, add 'Bookmarks' string.
 -> %original_member_id%
@@ -753,6 +775,12 @@ Specific for PixivSketch (option 1 if PixivSketch included, s1, and s2 ):
 ```
 -> %sketch_member_id%
    Pixiv Sketch artist id, might be different from Pixiv's artist id.
+```
+Specific for Fanbox:
+```
+-> %fanbox_name%
+   Fanbox name, might be different from Pixiv's artist name.
+   Useful if the artist is suspended from Pixiv and there is no record in the DB to avoid interuption.
 ```
 # list.txt Format
 - This file should be build in the following way, white space will be trimmed,
@@ -910,6 +938,13 @@ http://www.pixiv.net/member_illust.php?id=123456
 %pattern<unicode>([\U0001d400-\U0001ffff])%%pattern<1>(_+)%%replace<1>(_)%
 ```
 
+# Development
+PixivUtil2 posesses robust test suite. To run it, one needs pytest suite:
+```
+pip install --user pytest
+
+pytest -v ./test_*
+```
 
 # Credits/Contributor
 - Nandaka (Main Developer) - https://nandaka.devnull.zone
@@ -940,6 +975,7 @@ http://www.pixiv.net/member_illust.php?id=123456
 - fireattack
 - Jared Shields
 - DenDen047
+- Baa
 
 ** If I forget someone, please send me a pull request with the commit/merge id.
 

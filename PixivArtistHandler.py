@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import gc
 import sys
-import time
 import traceback
 
 from colorama import Fore, Style
@@ -23,6 +22,7 @@ def process_member(caller,
                    bookmark=False,
                    tags=None,
                    title_prefix="",
+                   bookmark_count=None,
                    notifier=None):
     # caller function/method
     # TODO: ideally to be removed or passed as argument
@@ -65,7 +65,7 @@ def process_member(caller,
             # Try to get the member page
             while True:
                 try:
-                    (artist, list_page) = PixivBrowserFactory.getBrowser().getMemberPage(member_id, page, bookmark, tags, r18mode=config.r18mode)
+                    (artist, list_page) = PixivBrowserFactory.getBrowser().getMemberPage(member_id, page, bookmark, tags, r18mode=config.r18mode, throw_empty_error=True)
                     break
                 except PixivException as ex:
                     caller.ERROR_CODE = ex.errorCode
@@ -165,6 +165,7 @@ def process_member(caller,
                                                                      user_dir,
                                                                      bookmark,
                                                                      title_prefix=title_prefix_img,
+                                                                     bookmark_count=bookmark_count,
                                                                      notifier=notifier)
 
                         break
@@ -180,7 +181,7 @@ def process_member(caller,
                         exc_type, exc_value, exc_traceback = sys.exc_info()
                         traceback.print_exception(exc_type, exc_value, exc_traceback)
                         PixivHelper.print_and_log("error", f"Error at process_member(): {sys.exc_info()} Member Id: {member_id}")
-                        time.sleep(2)
+                        PixivHelper.print_delay(2)
 
                 if result in (PixivConstant.PIXIVUTIL_SKIP_DUPLICATE,
                               PixivConstant.PIXIVUTIL_SKIP_LOCAL_LARGER,

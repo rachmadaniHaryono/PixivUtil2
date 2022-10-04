@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=I0011, C, C0302
 
-import re
-
-import demjson
+import demjson3
 from bs4 import BeautifulSoup
 
-import PixivHelper
 from PixivException import PixivException
 
 
@@ -21,7 +18,7 @@ class PixivArtist:
     isLastPage = None
     haveImages = None
     totalImages = 0
-    __re_imageULItemsClass = re.compile(r".*\b_image-items\b.*")
+    # __re_imageULItemsClass = re.compile(r".*\b_image-items\b.*")
     offset = None
     limit = None
     reference_image_id = 0
@@ -37,7 +34,7 @@ class PixivArtist:
             payload = None
             # detect if image count != 0
             if not fromImage:
-                payload = demjson.decode(page)
+                payload = demjson3.decode(page)
                 if payload["error"]:
                     raise PixivException(payload["message"], errorCode=PixivException.OTHER_MEMBER_ERROR, htmlPage=page)
                 if payload["body"] is None:
@@ -186,16 +183,16 @@ class PixivArtist:
                 self.haveImages = True
 
     def PrintInfo(self):
-        PixivHelper.safePrint('Artist Info')
-        PixivHelper.safePrint('id    : ' + str(self.artistId))
-        PixivHelper.safePrint('name  : ' + self.artistName)
-        PixivHelper.safePrint('avatar: ' + self.artistAvatar)
-        PixivHelper.safePrint('token : ' + self.artistToken)
-        PixivHelper.safePrint('urls  : {0}'.format(len(self.imageList)))
+        print('Artist Info')
+        print(f'id    : {self.artistId}')
+        print(f'name  : {self.artistName}')
+        print(f'avatar: {self.artistAvatar}')
+        print(f'token : {self.artistToken}')
+        print(f'urls  : {len(self.imageList)}')
         for item in self.imageList:
-            PixivHelper.safePrint('\t' + str(item))
-        PixivHelper.safePrint('total : {0}'.format(self.totalImages))
-        PixivHelper.safePrint('last? : {0}'.format(self.isLastPage))
+            print(f'\t{item}')
+        print(f'total : {self.totalImages}')
+        print(f'last? : {self.isLastPage}')
 
     def parseJs(self, page):
         ''' get the <meta> tag for attribute meta-preload-data and return json object'''
@@ -209,5 +206,5 @@ class PixivArtist:
         if jss is None or len(jss["content"]) == 0:
             return None  # Possibly error page
 
-        payload = demjson.decode(jss["content"])
+        payload = demjson3.decode(jss["content"])
         return payload

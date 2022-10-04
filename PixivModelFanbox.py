@@ -4,8 +4,9 @@ import codecs
 import os
 import re
 import sys
+from typing import List
 
-import demjson
+import demjson3
 from bs4 import BeautifulSoup
 
 import datetime_z
@@ -14,80 +15,6 @@ from PixivException import PixivException
 
 _re_fanbox_cover = re.compile(r"c\/.*\/fanbox")
 _url_pattern = re.compile("(https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]")
-
-class FanboxArtist(object):
-    artistId = 0
-    creatorId = ""
-    nextUrl = None
-    hasNextPage = False
-    _tzInfo = None
-    # require additional API call
-    artistName = ""
-    artistToken = ""
-
-    SUPPORTING = 0
-    FOLLOWING = 1
-    CUSTOM = 2
-
-    @classmethod
-    def parseArtistIds(cls, page):
-        ids = list()
-        js = demjson.decode(page)
-
-        if "error" in js and js["error"]:
-            raise PixivException("Error when requesting Fanbox", 9999, page)
-
-        if "body" in js and js["body"] is not None:
-            js_body = js["body"]
-            if "supportingPlans" in js["body"]:
-                js_body = js_body["supportingPlans"]
-            for creator in js_body:
-                ids.append(creator["user"]["userId"])
-        return ids
-
-    def __init__(self, artist_id, artist_name, creator_id, tzInfo=None):
-        self.artistId = int(artist_id)
-        self.artistName = artist_name
-        self.creatorId = creator_id
-        self._tzInfo = tzInfo
-
-    def __str__(self):
-        return f"FanboxArtist({self.artistId}, {self.creatorId}, {self.artistName})"
-
-    def parsePosts(self, page):
-        js = demjson.decode(page)
-
-        if "error" in js and js["error"]:
-            raise PixivException(f"Error when requesting Fanbox artist: {self.artistId}", 9999, page)
-
-        if js["body"] is not None:
-            js_body = js["body"]
-
-            posts = list()
-
-            if "creator" in js_body:
-                self.artistName = js_body["creator"]["user"]["name"]
-
-            if "post" in js_body:
-                # new api
-                post_root = js_body["post"]
-            else:
-                # https://www.pixiv.net/ajax/fanbox/post?postId={0}
-                # or old api
-                post_root = js_body
-
-            for jsPost in post_root["items"]:
-                post_id = int(jsPost["id"])
-                post = FanboxPost(post_id, self, jsPost, tzInfo=self._tzInfo)
-                posts.append(post)
-                # sanity check
-                assert (self.artistId == int(jsPost["user"]["userId"])), "Different user id from constructor!"
-
-            self.nextUrl = post_root["nextUrl"]
-            if self.nextUrl is not None and len(self.nextUrl) > 0:
-                self.hasNextPage = True
-
-            return posts
 
 
 class FanboxPost(object):
@@ -127,7 +54,6 @@ class FanboxPost(object):
     # 949
     descriptionUrlList = None
 
-
     def __init__(self, post_id, parent, page, tzInfo=None):
         self.images = list()
         self.embeddedFiles = list()
@@ -139,8 +65,11 @@ class FanboxPost(object):
         self.linkToFile = dict()
 
         self.parsePost(page)
+        self.parse_post_details(page)
 
-        if not self.is_restricted:
+    def parse_post_details(self, page):
+        # Issue #1094
+        if not self.is_restricted and "body" in page:
             self.parseBody(page)
 
             if self.type == 'image':
@@ -180,13 +109,22 @@ class FanboxPost(object):
         if self._tzInfo is not None:
             self.worksDateDateTime = self.worksDateDateTime.astimezone(self._tzInfo)
 
-        self.type = jsPost["type"]
-        if self.type not in FanboxPost._supportedType:
-            raise PixivException(f"Unsupported post type = {self.type} for post = {self.imageId}", errorCode=9999, htmlPage=jsPost)
+        # Issue #1094
+        if "type" in jsPost:
+            self.type = jsPost["type"]
+            if self.type not in FanboxPost._supportedType:
+                raise PixivException(f"Unsupported post type = {self.type} for post = {self.imageId}", errorCode=9999, htmlPage=jsPost)
+        else:
+            # assume it is image post
+            self.type = "image"
 
         self.likeCount = int(jsPost["likeCount"])
-        if jsPost["body"] is None:
+
+        # Issue #1094
+        if "body" not in jsPost or jsPost["body"] is None:
             self.is_restricted = True
+        if "isRestricted" in jsPost:
+            self.is_restricted = jsPost["isRestricted"]
 
     def parseBody(self, jsPost):
         ''' Parse general data for text and article'''
@@ -334,17 +272,78 @@ class FanboxPost(object):
                         # links = re.finditer("<a.*?href=(?P<mark>'|\")(.+?)(?P=mark)", embedStr)
                         # for link in links:
                         #     self.try_add(link.group(2), self.descriptionUrlList)
-                        links = _url_pattern.findall(embedStr)
+                        links = _url_pattern.finditer(embedStr)
                         for link in links:
-                            self.try_add(link, self.descriptionUrlList)
+                            self.try_add(link.group(), self.descriptionUrlList)
                     else:
                         PixivHelper.print_and_log("warn", f"Found missing embedId: {embedId} for {self.imageId}")
+                elif block["type"] == "url_embed":  # Issue #1087
+                    urlEmbedId = block["urlEmbedId"]
+                    if urlEmbedId in jsPost["body"]["urlEmbedMap"]:
+                        result = self.get_embed_url_data(jsPost["body"]["urlEmbedMap"][urlEmbedId], jsPost)
+                        self.body_text += "\n" + result
+                        # embedType = jsPost["body"]["urlEmbedMap"][urlEmbedId]["type"]
+                        # if embedType == "html.card":
+                        #     embedStr = jsPost["body"]["urlEmbedMap"][urlEmbedId]["html"]
+                        #     self.body_text += f"<p>{embedStr}</p>"
+                        #     links = _url_pattern.finditer(embedStr)
+                        #     for link in links:
+                        #         self.try_add(link.group(), self.descriptionUrlList)
+                        # else:
+                        #     PixivHelper.print_and_log("warn", f"Unknown urlEmbedId's type: {urlEmbedId} for {self.imageId} => {embedType}")
+                    else:
+                        PixivHelper.print_and_log("warn", f"Found missing urlEmbedId: {urlEmbedId} for {self.imageId}")
 
         # Issue #476
         if "video" in jsPost["body"]:
             self.body_text += u"{0}<br />{1}".format(
                 self.body_text,
                 self.getEmbedData(jsPost["body"]["video"], jsPost))
+
+    def get_embed_url_data(self, embedData, jsPost) -> str:
+        # Issue #1133
+        content_provider_path = os.path.abspath(os.path.dirname(sys.executable) + os.sep + "content_provider.json")
+        if not os.path.exists(content_provider_path):
+            content_provider_path = os.path.abspath("./content_provider.json")
+        if not os.path.exists(content_provider_path):
+            raise PixivException(f"Missing content_provider.json, please get it from https://github.com/Nandaka/PixivUtil2/blob/master/content_provider.json! Expected location => {content_provider_path}",
+                                 errorCode=PixivException.MISSING_CONFIG,
+                                 htmlPage=None)
+
+        cfg = demjson3.decode_file(content_provider_path)
+        embed_cfg = cfg["urlEmbedConfig"]
+        current_provider = embedData["type"]
+
+        if current_provider in embed_cfg:
+            if embed_cfg[current_provider]["ignore"]:
+                return ""
+
+            # get urls from given keys
+            for key in embed_cfg[current_provider]["get_link_keys"]:
+                js_keys = key.split(".")
+                root = embedData
+                for js_key in js_keys:
+                    root = root[js_key]
+                links = _url_pattern.finditer(root)
+                for link in links:
+                    self.try_add(link.group(), self.descriptionUrlList)
+
+            # get all the keys to list
+            keys = list()
+            for key in embed_cfg[current_provider]["keys"]:
+                js_keys = key.split(".")
+                root = embedData
+                for js_key in js_keys:
+                    root = root[js_key]
+                keys.append(root)
+            template = embed_cfg[current_provider]["format"]
+
+            result = template.format(*keys)
+            return result
+
+        else:
+            msg = f"Unsupported url embed provider = {embedData['type']} for post = {self.imageId}, please update content_provider.json."
+            raise PixivException(msg, errorCode=9999, htmlPage=jsPost)
 
     def getEmbedData(self, embedData, jsPost) -> str:
         # Issue #881
@@ -356,7 +355,7 @@ class FanboxPost(object):
                                  errorCode=PixivException.MISSING_CONFIG,
                                  htmlPage=None)
 
-        cfg = demjson.decode_file(content_provider_path)
+        cfg = demjson3.decode_file(content_provider_path)
         embed_cfg = cfg["embedConfig"]
         current_provider = embedData["serviceProvider"]
 
@@ -374,15 +373,11 @@ class FanboxPost(object):
                 content_format = embed_cfg[current_provider]["format"]
                 return content_format.format(content_id)
             else:
-                msg = "Empty content_id for embed provider = {0} for post = {1}, please update content_provider.json."
-                raise PixivException(msg.format(embedData["serviceProvider"], self.imageId),
-                                     errorCode=9999,
-                                     htmlPage=jsPost)
+                msg = f"Empty content_id for embed provider = {embedData['serviceProvider']} for post = {self.imageId}, please update content_provider.json."
+                raise PixivException(msg, errorCode=9999, htmlPage=jsPost)
         else:
-            msg = "Unsupported embed provider = {0} for post = {1}, please update content_provider.json."
-            raise PixivException(msg.format(embedData["serviceProvider"], self.imageId),
-                                 errorCode=9999,
-                                 htmlPage=jsPost)
+            msg = f"Unsupported embed provider = {embedData['serviceProvider']} for post = {self.imageId}, please update content_provider.json."
+            raise PixivException(msg, errorCode=9999, htmlPage=jsPost)
 
     def parseImages(self, jsPost):
         for image in jsPost["body"]["images"]:
@@ -436,6 +431,10 @@ class FanboxPost(object):
         if len(self.embeddedFiles) > 0:
             info.write("Urls          =\r\n")
             for link in self.embeddedFiles:
+                info.write(" - {0}\r\n".format(link))
+        if len(self.embeddedFiles) > 0:
+            info.write("descriptionUrlList =\r\n")
+            for link in self.descriptionUrlList:
                 info.write(" - {0}\r\n".format(link))
         info.close()
 
@@ -496,3 +495,81 @@ class FanboxPost(object):
             page = page.replace(k, v)
         info.write(page)
         info.close()
+
+
+class FanboxArtist(object):
+    artistId = 0
+    creatorId = ""
+    nextUrl = None
+    hasNextPage = False
+    _tzInfo = None
+    # require additional API call
+    artistName = ""
+    artistToken = ""
+    fanbox_name = ""
+
+    SUPPORTING = 0
+    FOLLOWING = 1
+    CUSTOM = 2
+
+    @classmethod
+    def parseArtistIds(cls, page):
+        ids = list()
+        js = demjson3.decode(page)
+
+        if "error" in js and js["error"]:
+            raise PixivException("Error when requesting Fanbox", 9999, page)
+
+        if "body" in js and js["body"] is not None:
+            js_body = js["body"]
+            if "supportingPlans" in js["body"]:
+                js_body = js_body["supportingPlans"]
+            for creator in js_body:
+                ids.append(creator["user"]["userId"])
+        return ids
+
+    def __init__(self, artist_id, artist_name, creator_id, tzInfo=None):
+        self.artistId = int(artist_id)
+        self.artistName = artist_name
+        self.creatorId = creator_id
+        self._tzInfo = tzInfo
+        # Issue #1117 Fanbox name might be different with Pixiv name
+        self.fanbox_name = artist_name
+
+    def __str__(self):
+        return f"FanboxArtist({self.artistId}, {self.creatorId}, {self.artistName})"
+
+    def parsePosts(self, page) -> List[FanboxPost]:
+        js = demjson3.decode(page)
+
+        if "error" in js and js["error"]:
+            raise PixivException(f"Error when requesting Fanbox artist: {self.artistId}", 9999, page)
+
+        if js["body"] is not None:
+            js_body = js["body"]
+
+            posts = list()
+
+            if "creator" in js_body:
+                self.artistName = js_body["creator"]["user"]["name"]
+
+            if "post" in js_body:
+                # new api
+                post_root = js_body["post"]
+            else:
+                # https://www.pixiv.net/ajax/fanbox/post?postId={0}
+                # or old api
+                post_root = js_body
+
+            for jsPost in post_root["items"]:
+                post_id = int(jsPost["id"])
+                post = FanboxPost(post_id, self, jsPost, tzInfo=self._tzInfo)
+                posts.append(post)
+                # sanity check
+                assert (self.artistId == int(jsPost["user"]["userId"])), "Different user id from constructor!"
+
+            self.nextUrl = post_root["nextUrl"]
+            if self.nextUrl is not None and len(self.nextUrl) > 0:
+                self.hasNextPage = True
+
+            return posts

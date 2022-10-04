@@ -11,7 +11,7 @@ from collections import OrderedDict
 from datetime import datetime
 from typing import List, Tuple
 
-import demjson
+import demjson3
 from bs4 import BeautifulSoup
 
 import datetime_z
@@ -80,6 +80,10 @@ class PixivImage (object):
     manga_series_order: int = -1
     manga_series_parent = None
 
+    # Issue #1064 titleCaptionTranslation
+    translated_work_title = ""
+    translated_work_caption = ""
+
     def __init__(self,
                  iid=0,
                  page=None,
@@ -91,7 +95,8 @@ class PixivImage (object):
                  tzInfo=None,
                  manga_series_order=-1,
                  manga_series_parent=None,
-                 writeRawJSON=False):
+                 writeRawJSON=False,
+                 stripHTMLTagsFromCaption=False):
         self.artist = parent
         self.fromBookmark = fromBookmark
         self.bookmark_count = bookmark_count
@@ -102,9 +107,13 @@ class PixivImage (object):
         self.descriptionUrlList = []
         self._tzInfo = tzInfo
         self.tags = list()
+        self.stripHTMLTagsFromCaption = stripHTMLTagsFromCaption
         # only for manga series
         self.manga_series_order = manga_series_order
         self.manga_series_parent = manga_series_parent
+
+        self.translated_work_title = ""
+        self.translated_work_caption = ""
 
         if page is not None:
 
@@ -241,7 +250,28 @@ class PixivImage (object):
         self.image_response_count = root["responseCount"]
 
         # Issue 421
-        parsed = BeautifulSoup(self.imageCaption, features="html5lib")
+        self.parse_url_from_caption(self.imageCaption)
+
+        # Strip HTML tags from caption once they have been collected by the above statement.
+        if self.stripHTMLTagsFromCaption:
+            self.imageCaption = BeautifulSoup(self.imageCaption, features="html5lib").text
+
+        # Issue #1064
+        if "titleCaptionTranslation" in root:
+            if "workTitle" in root["titleCaptionTranslation"] and \
+               root["titleCaptionTranslation"]["workTitle"] is not None and \
+               len(root["titleCaptionTranslation"]["workTitle"]) > 0:
+                self.translated_work_title = root["titleCaptionTranslation"]["workTitle"]
+            if "workCaption" in root["titleCaptionTranslation"] and \
+               root["titleCaptionTranslation"]["workCaption"] is not None and \
+               len(root["titleCaptionTranslation"]["workCaption"]) > 0:
+                self.translated_work_caption = root["titleCaptionTranslation"]["workCaption"]
+                self.parse_url_from_caption(self.translated_work_caption)
+                if self.stripHTMLTagsFromCaption:
+                    self.translated_work_caption = BeautifulSoup(self.translated_work_caption, features="html5lib").text
+
+    def parse_url_from_caption(self, caption_to_parse):
+        parsed = BeautifulSoup(caption_to_parse, features="html5lib")
         links = parsed.findAll('a')
         if links is not None and len(links) > 0:
             for link in links:
@@ -250,7 +280,9 @@ class PixivImage (object):
                 if link_str.startswith("/jump.php?"):
                     link_str = link_str[10:]
                     link_str = urllib.parse.unquote(link_str)
-                self.descriptionUrlList.append(link_str)
+
+                if link_str not in self.descriptionUrlList:
+                    self.descriptionUrlList.append(link_str)
         parsed.decompose()
         del parsed
 
@@ -393,6 +425,12 @@ class PixivImage (object):
             info.write("Urls          =\r\n")
             for link in self.descriptionUrlList:
                 info.write(f" - {link}\r\n")
+        # Issue #1064
+        if len(self.translated_work_title) > 0:
+            info.write(f"Translated Title   = {self.translated_work_title}\r\n")
+        if len(self.translated_work_caption) > 0:
+            info.write(f"Translated Caption = {self.translated_work_caption}\r\n")
+
         info.close()
 
     def WriteJSON(self, filename, JSONfilter):
@@ -434,8 +472,76 @@ class PixivImage (object):
                 jsonInfo["Ugoira Data"] = self.ugoira_data
             if len(self.descriptionUrlList) > 0:
                 jsonInfo["Urls"] = self.descriptionUrlList
+            # Issue #1064
+            jsonInfo["titleCaptionTranslation"] = {"workTitle": self.translated_work_title, "workCaption": self.translated_work_caption}
             info.write(json.dumps(jsonInfo, ensure_ascii=False, indent=4))
             info.close()
+
+    def WriteXMP(self, filename):
+        import pyexiv2
+        # import tempfile
+
+        # need to use temp file due to bad unicode support for pyexiv2 in windows
+        d = PixivHelper.create_temp_dir(prefix="xmp")
+        tempname = f"{d}/{self.imageId}.xmp"
+
+        info = codecs.open(tempname, 'wb', encoding='utf-8')
+
+        # Create the XMP file template.
+        info.write('<?xpacket begin="" id=""?>\n<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="XMP Core 4.4.0-Exiv2">\n</x:xmpmeta>\n<?xpacket end="w"?>\n')
+        info.close()
+
+        # Reopen file using pyexiv2
+        # newer version e.g. pyexiv2-2.7.0
+        info = pyexiv2.Image(tempname)
+        info_dict = info.read_xmp()
+        info_dict['Xmp.dc.creator'] = [self.artist.artistName]
+        # Check array isn't empty.
+        if self.imageTitle:
+            info_dict['Xmp.dc.title'] = self.imageTitle
+        # Check array isn't empty.
+        if self.imageCaption:
+            info_dict['Xmp.dc.description'] = self.imageCaption
+        # Check array isn't empty.
+        if self.imageTags:
+            info_dict['Xmp.dc.subject'] = self.imageTags
+        info_dict['Xmp.dc.date'] = [self.worksDateDateTime]
+        info_dict['Xmp.dc.source'] = f"http://www.pixiv.net/en/artworks/{self.imageId}"
+        info_dict['Xmp.dc.identifier'] = self.imageId
+
+        # Custom 'pixiv' namespace for non-standard details.
+        pyexiv2.registerNs('http://pixiv.com/', 'pixiv')
+
+        info_dict['Xmp.pixiv.artist_id'] = self.artist.artistId
+        info_dict['Xmp.pixiv.image_mode'] = self.imageMode
+        info_dict['Xmp.pixiv.pages'] = self.imageCount
+        info_dict['Xmp.pixiv.resolution'] = self.worksResolution
+        info_dict['Xmp.pixiv.bookmark_count'] = self.bookmark_count
+
+        if self.seriesNavData:
+            info_dict['Xmp.pixiv.series_title'] = self.seriesNavData['title']
+            info_dict['Xmp.pixiv.series_order'] = self.seriesNavData['order']
+            info_dict['Xmp.pixiv.series_id'] = self.seriesNavData['seriesId']
+        if self.ugoira_data:
+            info_dict['Xmp.pixiv.ugoira_data'] = self.ugoira_data
+        if len(self.descriptionUrlList) > 0:
+            info_dict['Xmp.pixiv.urls'] = ", ".join(self.descriptionUrlList)
+        # Issue #1064
+        if len(self.translated_work_title) > 0:
+            info_dict['Xmp.pixiv.translated_work_title'] = self.translated_work_title
+        if len(self.translated_work_caption) > 0:
+            info_dict['Xmp.pixiv.translated_work_caption'] = self.translated_work_caption
+        info.modify_xmp(info_dict)
+        info.close()
+
+        # rename to actual file
+        try:
+            # Issue #421 ensure subdir exists.
+            PixivHelper.makeSubdirs(filename)
+            shutil.move(tempname, filename)
+        except IOError:
+            shutil.move(tempname, f"{self.imageId}.xmp")
+            PixivHelper.get_logger().exception("Error when saving image info: %s, file is saved to: %s.xmp", filename, str(self.imageId))
 
     def WriteSeriesData(self, seriesId, seriesDownloaded, filename):
         from PixivBrowserFactory import getBrowser
@@ -497,7 +603,7 @@ class PixivImage (object):
         if jss is None or len(jss["content"]) == 0:
             return None  # Possibly error page
 
-        payload = demjson.decode(jss["content"])
+        payload = demjson3.decode(jss["content"])
         return payload
 
 

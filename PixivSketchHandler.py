@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import gc
 import sys
 import traceback
 
@@ -31,16 +32,24 @@ def process_sketch_post(caller, config, post_id):
         PixivHelper.print_and_log('error', f'Exception: {sys.exc_info()}')
 
 
-def process_sketch_artists(caller, config, artist_id, start_page=0, end_page=0):
+def process_sketch_artists(caller, config, artist_id, start_page=1, end_page=0, title_prefix=None):
     config.loadConfig(path=caller.configfile)
     br = PixivBrowserFactory.getBrowser()
-    title_prefix = f"Pixiv Sketch - Processing Artist Id: {artist_id}"
+    if title_prefix is None:
+        title_prefix = f"Pixiv Sketch - Processing Artist Id: {artist_id}"
+    else:
+        title_prefix = f"{title_prefix} Pixiv Sketch - Processing Artist Id: {artist_id}"
     caller.set_console_title(title_prefix)
-    msg = Fore.YELLOW + Style.NORMAL + f'Processing Artist Id: {artist_id}' + Style.RESET_ALL
+    msg = Fore.YELLOW + Style.NORMAL + f'Processing Artist Id: {artist_id} for PixivSketch' + Style.RESET_ALL
     PixivHelper.print_and_log(None, msg)
 
     try:
         artist = br.sketch_get_posts_by_artist_id(artist_id, end_page)
+
+        # check if have posts
+        if len(artist.posts) == 0:
+            PixivHelper.print_and_log('warn', f'No images for Artist Id: {artist_id}')
+            return
 
         POST_PER_PAGE = 10
         start_idx = POST_PER_PAGE * (start_page - 1)
@@ -78,8 +87,10 @@ def download_post(caller, config, post):
     if config.checkDBProcessHistory and not config.overwrite and not config.alwaysCheckFileSize:
         result = db.selectSketchPostByPostId(post.imageId)
         if result:
-            msg = Fore.YELLOW + Style.NORMAL + f'Skipping Post: {post.imageId} because already exists in DB and overwrite and alwaysCheckFileSize are disabled. .' + Style.RESET_ALL
+            msg = Fore.YELLOW + Style.NORMAL + f'Skipping Post: {post.imageId} because already exists in DB and overwrite and alwaysCheckFileSize are disabled.' + Style.RESET_ALL
             PixivHelper.print_and_log(None, msg)
+            gc.collect()
+            return PixivConstant.PIXIVUTIL_SKIP_DUPLICATE_NO_WAIT
 
     referer = f"https://sketch.pixiv.net/items/{post.imageId}"
     current_page = 0
@@ -105,7 +116,8 @@ def download_post(caller, config, post):
                                                                  config.overwrite,
                                                                  config.retry,
                                                                  config.backupOldFile,
-                                                                 image=post)
+                                                                 image=post,
+                                                                 download_from=PixivConstant.DOWNLOAD_SKETCH)
         if result == PixivConstant.PIXIVUTIL_OK:
             db.insertSketchPost(post)
             db.insertSketchPostImages(post.imageId,

@@ -8,6 +8,9 @@ import sqlite3
 import sys
 from datetime import datetime
 
+# import colorama
+from colorama import Back, Fore, Style
+
 import PixivHelper
 from PixivListItem import PixivListItem
 
@@ -214,6 +217,54 @@ class PixivDBManager(object):
         print('done.')
         return 0
 
+    def exportImageTable(self, name):
+        print(f'Exporting {name} table ...', end=' ')
+        im_list = list()
+        if name == "Pixiv":
+            table = "pixiv_master_image"
+            key = "image_id"
+        elif name == "Fanbox":
+            table = "fanbox_master_post"
+            key = "post_id"
+        elif name == "Sketch":
+            table = "sketch_master_post"
+            key = "post_id"
+        else:
+            raise
+        try:
+            c = self.conn.cursor()
+            c.execute(f''' SELECT COUNT(*) FROM {table}''')
+            result = c.fetchall()
+            if result[0][0] > 10000:
+                print('Row count is more than 10000 (actual row count:',
+                      str(result[0][0]), ')')
+                print('It may take a while to retrieve the data.')
+                arg = input('Continue [y/n, default is yes]').rstrip("\r") or 'y'
+                answer = arg.lower()
+                if answer not in ('y', 'n', 'o'):
+                    PixivHelper.print_and_log("error", f"Invalid args for TODO: {arg}, valid values are [y/n/o].")
+                    return
+                if answer == 'y':
+                    c = self.conn.cursor()
+                    c.execute(f'''SELECT {key}
+                                FROM {table}
+                                ORDER BY member_id''')
+                    for row in c:
+                        im_list.append(row[0])
+            else:
+                c.execute(f'''SELECT {key}
+                            FROM {table}
+                            ORDER BY member_id''')
+                for row in c:
+                    im_list.append(row[0])
+            c.close()
+            print('done.')
+            return im_list
+        except BaseException:
+            print('Error at exportImageTable():', str(sys.exc_info()))
+            print('failed')
+            raise
+
     def exportList(self, filename, include_artist_token=True):
         print('Exporting list...', end=' ')
         try:
@@ -322,7 +373,7 @@ class PixivDBManager(object):
                       (row[0], row[1].strip(), row[2], row[3], row[4], row[5], row[6]))
                 i = i + 1
                 if i == 79:
-                    select = input('Continue [y/n]? ').rstrip("\r")
+                    select = input('Continue [y/n, default is yes]? ').rstrip("\r")
                     if select == 'n':
                         break
                     else:
@@ -347,7 +398,7 @@ class PixivDBManager(object):
                 print('Row count is more than 10000 (actual row count:',
                       str(result[0][0]), ')')
                 print('It may take a while to retrieve the data.')
-                answer = input('Continue [y/n]').rstrip("\r")
+                answer = input('Continue [y/n, default is no]').rstrip("\r")
                 if answer == 'y':
                     c.execute('''SELECT * FROM pixiv_master_image
                                     ORDER BY member_id''')
@@ -717,6 +768,19 @@ class PixivDBManager(object):
         finally:
             c.close()
 
+    def deleteSketch(self, postId):
+        try:
+            c = self.conn.cursor()
+            c.execute('''DELETE FROM sketch_master_post WHERE post_id = ?''', (postId, ))
+            c.execute('''DELETE FROM sketch_post_image WHERE post_id = ?''', (postId, ))
+            self.conn.commit()
+        except BaseException:
+            print('Error at deleteSketch():', str(sys.exc_info()))
+            print('failed')
+            raise
+        finally:
+            c.close()
+
     def checkFilenames(self, base_filename, exts):
         for ext2 in exts:
             check_name = base_filename + ext2
@@ -828,7 +892,7 @@ class PixivDBManager(object):
     def replaceRootPath(self):
         oldPath = input("Old Path to Replace = ").rstrip("\r")
         print("Replacing " + oldPath + " to " + self.rootDirectory)
-        cont = input("continue[y/n]?").rstrip("\r") or 'n'
+        cont = input("continue[y/n, default is no]?").rstrip("\r") or 'n'
         if cont != "y":
             print("Aborted")
             return
@@ -935,6 +999,19 @@ class PixivDBManager(object):
         finally:
             c.close()
 
+    def selectFanboxImageByImageIdAndPage(self, post_id, page):
+        try:
+            c = self.conn.cursor()
+            c.execute(
+                '''SELECT * FROM fanbox_post_image WHERE post_id = ? AND page = ? ''', (post_id, page))
+            return c.fetchone()
+        except BaseException:
+            print('Error at selectFanboxImageByImageIdAndPage():', str(sys.exc_info()))
+            print('failed')
+            raise
+        finally:
+            c.close()
+
     def deleteFanboxPost(self, post_id, by):
         post_id = int(post_id)
         if by not in ["member_id", "post_id"]:
@@ -997,7 +1074,7 @@ class PixivDBManager(object):
                     if os.path.exists(filename):
                         continue
                 items.append(row)
-                print("Missing: {0} at \n{1}".format(row[0], row[1]))
+                print("Missing: {0} at \n{1}".format(row[0], row[2]))
 
             while len(items) != 0:
                 # End scan
@@ -1069,6 +1146,19 @@ class PixivDBManager(object):
         finally:
             c.close()
 
+    def selectSketchImageByImageIdAndPage(self, post_id, page):
+        try:
+            c = self.conn.cursor()
+            c.execute(
+                '''SELECT * FROM sketch_post_image WHERE post_id = ? AND page = ? ''', (post_id, page))
+            return c.fetchone()
+        except BaseException:
+            print('Error at selectSketchImageByImageIdAndPage():', str(sys.exc_info()))
+            print('failed')
+            raise
+        finally:
+            c.close()
+
     def selectSketchPostByPostId(self, post_id):
         try:
             c = self.conn.cursor()
@@ -1079,6 +1169,103 @@ class PixivDBManager(object):
             return c.fetchone()
         except BaseException:
             print('Error at selectSketchPostByPostId():', str(sys.exc_info()))
+            print('failed')
+            raise
+        finally:
+            c.close()
+
+    def deleteSketchPost(self, post_id, by):
+        post_id = int(post_id)
+        if by not in ["member_id", "post_id"]:
+            return
+
+        try:
+            c = self.conn.cursor()
+            c.execute(f'''DELETE FROM sketch_post_image WHERE post_id in
+                          (SELECT post_id FROM sketch_master_post WHERE {by} = ?)''', (post_id,))
+            c.execute(f'''DELETE FROM sketch_master_post WHERE {by} = ?''', (post_id,))
+            self.conn.commit()
+        except BaseException:
+            print('Error at deleteSketchPost():', str(sys.exc_info()))
+            print('failed')
+            raise
+        finally:
+            c.close()
+
+    def cleanUpSketch(self):
+        try:
+            print("Start sketch clean-up operation.")
+            print("Selecting all sketches, this may take some times.")
+            c = self.conn.cursor()
+            c.execute('''SELECT post_id, page, save_name from sketch_post_image''')
+            print("Checking images.")
+            for row in c:
+                # Issue 340
+                filename = row[2]
+                fileExists = False
+
+                if filename is not None and len(filename) > 0:
+                    if os.path.exists(filename):
+                        continue
+
+                if not fileExists:
+                    print("Missing: {0} at {1}".format(row[0], row[2]))
+                    self.deleteSketch(row[0])
+            self.conn.commit()
+        except BaseException:
+            print('Error at cleanUpSketch():', str(sys.exc_info()))
+            print('failed')
+            raise
+        finally:
+            c.close()
+
+    def interactiveSketchCleanUp(self):
+        items = []
+        try:
+            print("Start sketch clean-up operation.")
+            print("Selecting all sketches, this may take some times.")
+            c = self.conn.cursor()
+            print("Collecting missing images.")
+            c.execute('''SELECT post_id, page, save_name from sketch_post_image''')
+            for row in c:
+                # Issue 340
+                filename = row[2]
+                fileExists = False
+
+                if filename is not None and len(filename) > 0:
+                    if os.path.exists(filename):
+                        continue
+
+                if not fileExists:
+                    items.append(row)
+                    print("Missing: {0} at \n{1}".format(row[0], row[2]))
+
+            while len(items) != 0:
+                # End scan
+                print(items)
+                regex = input(
+                    "Please provide a search regex, use empty string to skip(Empty to stop now):").rstrip("\r")
+                if regex == "":
+                    break
+                repl = input("Replace regex with what?").rstrip("\r")
+                regex = re.compile(regex)
+
+                # Replace any paths where replacement results in a correct path
+                ll = []
+                for row in items:
+                    new_name = regex.sub(repl, row[2])
+                    if new_name is not None and len(new_name) > 0:
+                        if os.path.exists(new_name):
+                            c.execute('''UPDATE sketch_post_image
+                                SET save_name = ?
+                                WHERE post_id = ? and page = ?''', (new_name, row[0], row[1]))
+                            continue
+                    ll.append(items)
+                items = ll
+            c.close()
+            self.conn.commit()
+        except BaseException:
+            print('Error at interactiveSketchCleanUp():', str(sys.exc_info()))
             print('failed')
             raise
         finally:
@@ -1158,7 +1345,9 @@ class PixivDBManager(object):
 ##########################################
 
     def menu(self):
-        print('Pixiv DB Manager Console')
+        PADDING = 60
+        print(Fore.YELLOW + Back.BLACK + Style.BRIGHT + 'Pixiv DB Manager Console' + Style.RESET_ALL)
+        print(Style.BRIGHT + '── Pixiv '.ljust(PADDING, "─") + Style.RESET_ALL)
         print('1. Show all member')
         print('2. Show all images')
         print('3. Export list (member_id only)')
@@ -1172,11 +1361,14 @@ class PixivDBManager(object):
         print('11. Delete member and image (cascade deletion)')
         print('12. Blacklist image by image_id')
         print('13. Show all deleted member')
-        print('===============================================')
+        print(Style.BRIGHT + '── FANBOX '.ljust(PADDING, "─") + Style.RESET_ALL)
         print('f1. Export FANBOX post list')
         print('f2. Delete FANBOX download history by member_id')
         print('f3. Delete FANBOX download history by post_id')
-        print('===============================================')
+        print(Style.BRIGHT + '── Sketch '.ljust(PADDING, "─") + Style.RESET_ALL)
+        print('s1. Delete Sketch download history by member_id')
+        print('s2. Delete Sketch download history by post_id')
+        print(Style.BRIGHT + '── Batch Manage DB '.ljust(PADDING, "─") + Style.RESET_ALL)
         print('c. Clean Up Database')
         print('i. Interactive Clean Up Database')
         print('p. Compact Database')
@@ -1198,7 +1390,7 @@ class PixivDBManager(object):
                 elif selection == '3':
                     filename = input('Filename? ').rstrip("\r")
                     includeArtistToken = input(
-                        'Include Artist Token[y/n]? ').rstrip("\r")
+                        'Include Artist Token[y/n, default is no]? ').rstrip("\r")
                     if includeArtistToken.lower() == 'y':
                         includeArtistToken = True
                     else:
@@ -1273,12 +1465,20 @@ class PixivDBManager(object):
                 elif selection == 'f3':
                     post_id = input('post_id? ').rstrip("\r")
                     self.deleteFanboxPost(post_id, "post_id")
+                elif selection == 's1':
+                    member_id = input('member_id? ').rstrip("\r")
+                    self.deleteSketchPost(member_id, "member_id")
+                elif selection == 's2':
+                    post_id = input('post_id? ').rstrip("\r")
+                    self.deleteSketchPost(post_id, "post_id")
                 elif selection == 'c':
                     self.cleanUp()
                     self.cleanUpFanbox()
+                    self.cleanUpSketch()
                 elif selection == 'i':
                     self.interactiveCleanUp()
                     self.interactiveCleanUpFanbox()
+                    self.interactiveSketchCleanUp()
                 elif selection == 'p':
                     self.compactDatabase()
                 elif selection == 'r':

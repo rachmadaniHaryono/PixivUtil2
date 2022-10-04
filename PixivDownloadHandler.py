@@ -2,6 +2,8 @@
 import codecs
 import gc
 import os
+import shlex
+import subprocess
 import sys
 import time
 import traceback
@@ -10,10 +12,11 @@ import urllib
 import mechanize
 
 import PixivBrowserFactory
-import PixivConstant
-from PixivException import PixivException
-import PixivHelper
 import PixivConfig
+import PixivConstant
+import PixivHelper
+from PixivDBManager import PixivDBManager
+from PixivException import PixivException
 
 
 def download_image(caller,
@@ -25,11 +28,12 @@ def download_image(caller,
                    backup_old_file=False,
                    image=None,
                    page=None,
-                   notifier=None):
+                   notifier=None,
+                   download_from=PixivConstant.DOWNLOAD_PIXIV):
     '''return download result and filename if ok'''
     # caller function/method
     # TODO: ideally to be removed or passed as argument
-    db = caller.__dbManager__
+    db: PixivDBManager = caller.__dbManager__
     config: PixivConfig = caller.__config__
 
     if notifier is None:
@@ -120,15 +124,33 @@ def download_image(caller,
 
                 # check based on filename stored in DB using image id
                 if image is not None:
+                    row = None
                     db_filename = None
-                    if page is not None:
-                        row = db.selectImageByImageIdAndPage(image.imageId, page)
+                    # Issue #1084
+                    if download_from == PixivConstant.DOWNLOAD_PIXIV:
+                        if page is not None:
+                            row = db.selectImageByImageIdAndPage(image.imageId, page)
+                            if row is not None:
+                                db_filename = row[2]
+                        else:
+                            row = db.selectImageByImageId(image.imageId)
+                            if row is not None:
+                                db_filename = row[3]
+                    elif download_from == PixivConstant.DOWNLOAD_FANBOX:
+                        if page is not None:
+                            row = db.selectFanboxImageByImageIdAndPage(image.imageId, page)
+                        else:
+                            row = db.selectFanboxImageByImageIdAndPage(image.imageId, -1)  # Cover image
                         if row is not None:
                             db_filename = row[2]
-                    else:
-                        row = db.selectImageByImageId(image.imageId)
+                    elif download_from == PixivConstant.DOWNLOAD_SKETCH:
+                        if page is not None:
+                            row = db.selectSketchImageByImageIdAndPage(image.imageId, page)
+                        else:
+                            row = db.selectSketchImageByImageIdAndPage(image.imageId, 0)
                         if row is not None:
-                            db_filename = row[3]
+                            db_filename = row[2]
+
                     if db_filename is not None and os.path.isfile(db_filename):
                         old_size = os.path.getsize(db_filename)
                         # if file_size < 0:
@@ -149,6 +171,27 @@ def download_image(caller,
                 # actual download
                 notifier(type="DOWNLOAD", message=f"Start downloading {url} to {filename_save}")
                 (downloadedSize, filename_save) = perform_download(url, remote_file_size, filename_save, overwrite, config, referer)
+
+                # Issue #956 need to calculate hash file for each method
+                old_filename_save = filename_save
+                if filename_save.find("%md5%") > 0:
+                    PixivHelper.print_and_log('info', 'Calculating md5...', end="")
+                    hash_str = PixivHelper.get_hash(filename_save)
+                    PixivHelper.print_and_log('info', f" => {hash_str}")
+                    filename_save = filename_save.replace("%md5%", hash_str)
+                if filename_save.find("%sha1%") > 0:
+                    PixivHelper.print_and_log('info', 'Calculating sha1...', end="")
+                    hash_str = PixivHelper.get_hash(filename_save, "sha1")
+                    PixivHelper.print_and_log('info', f" => {hash_str}")
+                    filename_save = filename_save.replace("%sha1%", hash_str)
+                if filename_save.find("%sha256%") > 0:
+                    PixivHelper.print_and_log('info', 'Calculating sha256...', end="")
+                    hash_str = PixivHelper.get_hash(filename_save, "sha256")
+                    PixivHelper.print_and_log('info', f" => {hash_str}")
+                    filename_save = filename_save.replace("%sha256%", hash_str)
+                if not os.path.exists(filename_save) and os.path.exists(old_filename_save):
+                    os.rename(old_filename_save, filename_save)
+
                 # set last-modified and last-accessed timestamp
                 if image is not None and config.setLastModified and filename_save is not None and os.path.isfile(filename_save):
                     ts = time.mktime(image.worksDateDateTime.timetuple())
@@ -183,6 +226,9 @@ def download_image(caller,
                         check_result = None
                         try:
                             check_result = zf.testzip()
+                        # Issue #1165
+                        except NotImplementedError as ne:
+                            PixivHelper.print_and_log('warn', f' {ne}')
                         except RuntimeError as e:
                             if 'encrypted' in str(e):
                                 PixivHelper.print_and_log('info', ' archive is encrypted, cannot verify.')
@@ -203,11 +249,25 @@ def download_image(caller,
                 else:
                     PixivHelper.print_and_log('info', ' done.')
 
+                # codecs.open is stateless, so if platform_encoding == utf-8-sig each new line starts from utf-8-sig
+                # this is bad and I feel bad
+
+                if os.path.isfile(caller.dfilename):
+                    dfile_encoding = 'utf-8'
+                else:
+                    dfile_encoding = caller.platform_encoding
+
                 # write to downloaded lists
                 if caller.start_iv or config.createDownloadLists:
-                    dfile = codecs.open(caller.dfilename, 'a+', encoding='utf-8')
+                    dfile = codecs.open(caller.dfilename, 'a+', encoding=dfile_encoding)
                     dfile.write(filename_save + "\n")
                     dfile.close()
+
+                # Issue #970
+                if config.enablePostProcessing and len(config.postProcessingCmd) > 0:
+                    cmd = config.postProcessingCmd.replace("%filename%", filename_save)
+                    PixivHelper.print_and_log('info', f'Running post processing command: {cmd}')
+                    subprocess.Popen(shlex.split(cmd), startupinfo=None)
 
                 return (PixivConstant.PIXIVUTIL_OK, filename_save)
 
@@ -230,7 +290,7 @@ def download_image(caller,
                 raise
             except KeyboardInterrupt:
                 PixivHelper.print_and_log('info', 'Aborted by user request => Ctrl-C')
-                return (PixivConstant.PIXIVUTIL_ABORTED, None)
+                return (PixivConstant.PIXIVUTIL_KEYBOARD_INTERRUPT, None)
             finally:
                 if res is not None:
                     del res
@@ -348,21 +408,15 @@ def handle_ugoira(image, zip_filename, config, notifier):
         if not os.path.exists(webm_filename):
             PixivHelper.ugoira2webm(ugo_name,
                                     webm_filename,
-                                    config.ffmpeg,
-                                    config.ffmpegCodec,
-                                    config.ffmpegParam,
-                                    config.ffmpegExt,
-                                    image)
+                                    codec=config.ffmpegCodec,
+                                    extension=config.ffmpegExt,
+                                    image=image)
     if config.createWebp:
         webp_filename = ugo_name[:-7] + ".webp"
         if not os.path.exists(webp_filename):
-            PixivHelper.ugoira2webm(ugo_name,
+            PixivHelper.ugoira2webp(ugo_name,
                                     webp_filename,
-                                    config.ffmpeg,
-                                    config.webpCodec,
-                                    config.webpParam,
-                                    "webp",
-                                    image)
+                                    image=image)
 
     if config.deleteZipFile and os.path.exists(zip_filename) and zip_filename.endswith(".zip"):
         PixivHelper.print_and_log('info', f"Deleting zip file => {zip_filename}")

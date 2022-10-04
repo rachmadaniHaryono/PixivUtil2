@@ -4,7 +4,10 @@ import gc
 import os
 import re
 import sys
+import shutil
+import time
 import traceback
+import pathlib
 import urllib
 
 from colorama import Fore, Style
@@ -14,6 +17,7 @@ import PixivBrowserFactory
 import PixivConstant
 import PixivDownloadHandler
 import PixivHelper
+from PixivDBManager import PixivDBManager
 from PixivException import PixivException
 
 __re_manga_page = re.compile(r'(\d+(_big)?_p\d+)')
@@ -31,11 +35,12 @@ def process_image(caller,
                   image_response_count=-1,
                   notifier=None,
                   useblacklist=True,
+                  reencoding=False,
                   manga_series_order=-1,
                   manga_series_parent=None) -> int:
     # caller function/method
     # TODO: ideally to be removed or passed as argument
-    db = caller.__dbManager__
+    db: PixivDBManager = caller.__dbManager__
 
     if notifier is None:
         notifier = PixivHelper.dummy_notifier
@@ -65,7 +70,7 @@ def process_image(caller,
             in_db = True
 
         # skip if already recorded in db and alwaysCheckFileSize is disabled and overwrite is disabled.
-        if in_db and not config.alwaysCheckFileSize and not config.overwrite:
+        if in_db and not config.alwaysCheckFileSize and not config.overwrite and not reencoding:
             PixivHelper.print_and_log(None, f'Already downloaded in DB: {image_id}')
             gc.collect()
             return PixivConstant.PIXIVUTIL_SKIP_DUPLICATE_NO_WAIT
@@ -166,28 +171,25 @@ def process_image(caller,
                     PixivHelper.print_and_log('warn', f'Skipping image_id: {image_id} - url is not in the filter: {extension_filter} => {url}')
                     break
 
+        # issue #1027 filter by bookmark count
+        if bookmark_count is not None and int(bookmark_count) > -1 and int(image.bookmark_count) < int(bookmark_count):
+            download_image_flag = False
+            PixivHelper.print_and_log('warn', f'Skipping image_id: {image_id} - post bookmark count {image.bookmark_count} is less than: {bookmark_count}')
+
         if download_image_flag:
             if artist is None:
                 PixivHelper.print_and_log(None, f'Member Name  : {image.artist.artistName}')
                 PixivHelper.print_and_log(None, f'Member Avatar: {image.artist.artistAvatar}')
                 PixivHelper.print_and_log(None, f'Member Token : {image.artist.artistToken}')
                 PixivHelper.print_and_log(None, f'Member Background : {image.artist.artistBackground}')
+
             PixivHelper.print_and_log(None, f"Title: {image.imageTitle}")
+            if len(image.translated_work_title) > 0:
+                PixivHelper.print_and_log(None, f"Translated Title: {image.translated_work_title}")
             tags_str = ', '.join(image.imageTags)
             PixivHelper.print_and_log(None, f"Tags : {tags_str}")
             PixivHelper.print_and_log(None, f"Date : {image.worksDateDateTime}")
             PixivHelper.print_and_log(None, f"Mode : {image.imageMode}")
-
-            # # get bookmark count
-            # if ("%bookmark_count%" in config.filenameFormat or "%image_response_count%" in config.filenameFormat) and image.bookmark_count == -1:
-            #     PixivHelper.print_and_log(None, "Parsing bookmark page", end=' ')
-            #     bookmark_url = f'https://www.pixiv.net/bookmark_detail.php?illust_id={image_id}'
-            #     parse_bookmark_page = PixivBrowserFactory.getBrowser().getPixivPage(bookmark_url)
-            #     image.ParseBookmarkDetails(parse_bookmark_page)
-            #     parse_bookmark_page.decompose()
-            #     del parse_bookmark_page
-            #     PixivHelper.print_and_log(None, f"Bookmark Count : {image.bookmark_count}")
-            #     caller.__br__.back()
             PixivHelper.print_and_log(None, f"Bookmark Count : {image.bookmark_count}")
 
             if config.useSuppressTags:
@@ -263,7 +265,7 @@ def process_image(caller,
 
                         if result == PixivConstant.PIXIVUTIL_NOT_OK:
                             PixivHelper.print_and_log('error', f'Image url not found/failed to download: {image.imageId}')
-                        elif result == PixivConstant.PIXIVUTIL_ABORTED:
+                        elif result == PixivConstant.PIXIVUTIL_KEYBOARD_INTERRUPT:
                             raise KeyboardInterrupt()
 
                         manga_files.append((image_id, page, filename))
@@ -273,7 +275,25 @@ def process_image(caller,
                         PixivHelper.print_and_log('error', f'Error when download_image(), giving up url: {img}')
                     PixivHelper.print_and_log(None, '')
 
-            if config.writeImageInfo or config.writeImageJSON:
+                    if config.writeImageXMPPerImage:
+                        filename_info_format = config.filenameInfoFormat or config.filenameFormat
+                        # Issue #575
+                        if image.imageMode == 'manga':
+                            filename_info_format = config.filenameMangaInfoFormat or config.filenameMangaFormat or filename_info_format
+                        info_filename = PixivHelper.make_filename(filename_info_format,
+                                                                image,
+                                                                tagsSeparator=config.tagsSeparator,
+                                                                tagsLimit=config.tagsLimit,
+                                                                fileUrl=url,
+                                                                appendExtension=False,
+                                                                bookmark=bookmark,
+                                                                searchTags=search_tags,
+                                                                useTranslatedTag=config.useTranslatedTag,
+                                                                tagTranslationLocale=config.tagTranslationLocale)
+                        info_filename = PixivHelper.sanitize_filename(info_filename, target_dir)
+                        image.WriteXMP(info_filename + ".xmp")
+
+            if config.writeImageInfo or config.writeImageJSON or config.writeImageXMP:
                 filename_info_format = config.filenameInfoFormat or config.filenameFormat
                 # Issue #575
                 if image.imageMode == 'manga':
@@ -305,6 +325,8 @@ def process_image(caller,
                     # trim _pXXX
                     json_filename = re.sub(r'_p?\d+$', '', json_filename)
                     image.WriteSeriesData(image.seriesNavData['seriesId'], caller.__seriesDownloaded, json_filename + ".json")
+                if config.writeImageXMP and not config.writeImageXMPPerImage:
+                    image.WriteXMP(info_filename + ".xmp")
 
             if image.imageMode == 'ugoira_view':
                 if config.writeUgoiraInfo:
@@ -419,3 +441,123 @@ def process_manga_series(caller,
         PixivHelper.print_and_log('error', f'Error at process_manga_series(): {manga_series_id}')
         PixivHelper.print_and_log('error', f'Exception: {sys.exc_info()}')
         raise
+
+
+def process_ugoira_local(caller, config):
+    directory = config.rootDirectory
+    counter = 0
+    d = ""
+    res = None
+    counter = 0
+    list_done = list()
+
+    try:
+        print('')
+        for extension in ["ugoira", "zip"]:  # always ugoira then zip
+            for zip in pathlib.Path(directory).rglob(f'*.{extension}'):
+                zip_name = os.path.splitext(os.path.basename(zip))[0]
+                zip_dir = os.path.dirname(zip)
+                image_id = zip_name.partition("_")[0]
+                if image_id not in list_done:
+                    counter += 1
+                    PixivHelper.print_and_log(None, f"# Ugoira {counter}")
+                    PixivHelper.print_and_log("info", "Deleting old animated files ...", newline=False)
+                    d = PixivHelper.create_temp_dir(prefix="reencoding")
+
+                    # List and move all files related to the image_id
+                    for file in os.listdir(zip_dir):
+                        if os.path.isfile(os.path.join(zip_dir, file)) and zip_name in file:
+                            file_basename = os.path.basename(file)
+                            file_ext = os.path.splitext(file_basename)[1]
+                            if((("gif" in file_ext) and (config.createGif))
+                               or (("png" in file_ext) and (config.createApng))
+                               or (("webm" in file_ext) and (config.createWebm))
+                               or (("webp" in file_ext) and (config.createWebp))
+                               or (("ugoira" in file_ext) and (config.createUgoira))
+                               or ("zip" in file_ext)):
+                                abs_file_path = os.path.abspath(os.path.join(zip_dir, file))
+                                PixivHelper.print_and_log("debug", f"Moving {abs_file_path} to {d}")
+                                if ("zip" in file_ext) or ("ugoira" in file_ext):
+                                    shutil.copy2(abs_file_path, os.path.join(d, file_basename))
+                                else:
+                                    shutil.move(abs_file_path, os.path.join(d, file_basename))
+                    PixivHelper.print_and_log(None, " done.")
+
+                    # Process artwork locally
+                    if "ugoira" in extension and not config.overwrite:
+                        try:
+                            msg = Fore.YELLOW + Style.NORMAL + f'Processing Image Id: {image_id}' + Style.RESET_ALL
+                            PixivHelper.print_and_log(None, msg)
+                            PixivDownloadHandler.handle_ugoira(None, str(zip), config, None)
+                            res = PixivConstant.PIXIVUTIL_OK
+                        except PixivException as ex:
+                            PixivHelper.print_and_log('error', f'PixivException for Image ID ({image_id}): {ex}')
+                            PixivHelper.print_and_log('error', f'Stack Trace: {sys.exc_info()}')
+                            res = PixivConstant.PIXIVUTIL_NOT_OK
+                        except Exception as ex:
+                            PixivHelper.print_and_log('error', f'Exception for Image ID ({image_id}): {ex}')
+                            PixivHelper.print_and_log('error', f'Stack Trace: {sys.exc_info()}')
+                            exc_type, exc_value, exc_traceback = sys.exc_info()
+                            traceback.print_exception(exc_type, exc_value, exc_traceback)
+                            res = PixivConstant.PIXIVUTIL_NOT_OK
+                        finally:
+                            if res == PixivConstant.PIXIVUTIL_NOT_OK:
+                                PixivHelper.print_and_log('warn', f'Failed to process Image ID {image_id} locally: will retry with online infos')
+                                PixivHelper.print_and_log('debug', f'Removing corrupted ugoira {zip}')
+                                os.remove(zip)
+
+                    # Process artwork with online infos
+                    if "zip" in extension or res == PixivConstant.PIXIVUTIL_NOT_OK or ("ugoira" in extension and config.overwrite):
+                        res = process_image(caller,
+                                            config,
+                                            artist=None,
+                                            image_id=image_id,
+                                            useblacklist=False,
+                                            reencoding=True)
+                        if res == PixivConstant.PIXIVUTIL_NOT_OK:
+                            PixivHelper.print_and_log("warn", f"Cannot process Image Id: {image_id}, restoring old animated files...", newline=False)
+                            for file_name in os.listdir(d):
+                                PixivHelper.print_and_log("debug", f"Moving back {os.path.join(d, file_name)} to {os.path.join(zip_dir, file_name)}")
+                                shutil.move(os.path.join(d, file_name), os.path.join(zip_dir, file_name))  # overwrite corrupted file generated
+                            PixivHelper.print_and_log(None, " done.")
+                            print('')
+
+                    # Checking result
+                    list_file_zipdir = os.listdir(zip_dir)
+                    for file_name in os.listdir(d):
+                        file_ext = os.path.splitext(file_name)[1]
+                        if file_name not in list_file_zipdir and config.backupOldFile:
+                            if((config.createUgoira and not config.deleteUgoira and "ugoira" in file_ext)
+                              or (not config.deleteZipFile and "zip" in file_ext)
+                              or (config.createGif and "gif" in file_ext)
+                              or (config.createApng and "png" in file_ext)
+                              or (config.createWebm and "webm" in file_ext)
+                              or (config.createWebp and "webp" in file_ext)):
+                                split_name = file_name.rsplit(".", 1)
+                                new_name = file_name + "." + str(int(time.time()))
+                                if len(split_name) == 2:
+                                    new_name = split_name[0] + "." + str(int(time.time())) + "." + split_name[1]
+                                PixivHelper.print_and_log('warn', f"Could not found the animated file re-encoded ==> {file_name}, backing up to: {new_name}")
+                                PixivHelper.print_and_log('warn', "The new encoded file may have another name or the artist may have change its name.")
+                                PixivHelper.print_and_log("debug", f"Rename and move {os.path.join(d, file_name)} to {os.path.join(zip_dir, new_name)}")
+                                shutil.move(os.path.join(d, file_name), os.path.join(zip_dir, new_name))
+                    print('')
+
+                    # Delete temp path
+                    if os.path.exists(d) and d != "":
+                        PixivHelper.print_and_log("debug", f"Deleting path {d}")
+                        shutil.rmtree(d)
+                    list_done.append(image_id)
+        if counter == 0:
+            PixivHelper.print_and_log('info', "No zip file or ugoira found to re-encode animated files.")
+
+    except Exception as ex:
+        if isinstance(ex, KeyboardInterrupt):
+            raise
+        PixivHelper.print_and_log('error', 'Error at process_ugoira_local(): %s' % str(sys.exc_info()))
+        PixivHelper.print_and_log('error', 'failed')
+        raise
+    finally:
+        if os.path.exists(d) and d != "":
+            PixivHelper.print_and_log("debug", f"Deleting path {d} in finally")
+            shutil.rmtree(d)

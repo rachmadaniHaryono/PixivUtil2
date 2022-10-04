@@ -1,3 +1,115 @@
+20220924
+- Update #1156: add support for url provider 'fanbox.creator'.
+- Merge bookmark skip function improvement (#1160) by @Yuki.
+- Implement #1162: add disableScreenClear in config.ini in debug section,
+- Implement #1165: Skip retry if the archive file format not supported.
+- Update #1167: change default downloadDelay to 5s.
+- Update #1116: update readme.md
+- Increase download buffer size from 8kB to 128kB.
+- update compiled version to use Python 3.10.7 64-bit.
+
+20220825
+- Fix #1142 and #1152: Fanbox Service Provider error.
+- Update #814: support to import full cookies string.
+- Merge fix ugoira generation using ffmpeg.exe Windows path for all distribution (#1145) by @Toyem
+  - need to update `config.ini` in `[FFmpeg]` section if you have parameter error when encoding to gif.
+    `gifParam = -filter_complex [0:v]split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle`
+- Fix #1146: update lxml with html5lib.
+- Merge Add date option to ranking download (#1149) by @Toyem
+
+20220804
+- Merge fix reencoding backup of files to follow ugoira config (#1131) by @Toyem.
+- Implement #1133: enhance content_provider.json to support urlEmbed.
+- Merge Add a separator in temp folder cmd for windows (fix #1132) (#1135) by @Toyem.
+- Merge fix ugoira generation and reencoding for all distribution for issue #1132 (#1136) by @Toyem.
+- Merge Fix for #1138 (#1139) by @NHOrus.
+- Merge Fixes Byte Order Mark in Downloaded file list, again. (#1137) by @NHOrus.
+- and other minor changes.
+
+20220701
+- Merge Update WriteXMP feature to use pyexiv2 only (#1043) by @Baa.
+- Merge Adds feature to strip HTML from captions (#1045) by @Baa.
+- Fix #1047: fix "ffmpegExt" config.
+- Fix #1019: add 404 handling for pixiv sketch
+- Merge Some optimizations (#1052) by @amatuerCoder.
+- Implement #1064: add parser for titleCaptionTranslation.
+  - Add new filename format %translated_title% for translated title if exists, else it will use original title.
+- Implement #1068: add content type filter.
+- Merge Fix #1072, #1065 (running in pipe on Unix) (#1082) by @dragontamer8740.
+- Fix #1084: Fanbox download removes Pixiv files with same ID.
+- Implement #1087: FANBOX's url_embed not detected.
+- Update logging for #1090: premature download by tags.
+- Merge Pixiv Sketch config and Database Manager changes (#1078) by @cglmrfreeman.
+- Fix #1094: Fanbox f1/f2 download issue.
+- Fix #1095: Fanbox Post missing files to download.
+- Merge ugoira re-encode and export local database option  (#1113) by @Toyem.
+- Merge Fix option name collision (#1114) by TwinkleStar03.
+- Merge Code improvement based on @PatrickL546 's script (#1112) (#1115) by @Toyem.
+- Implement #1117: add new filename format %fanbox_name% for fanbox specific artist name.
+- Merge Update readme (#1121) by @PatrickL546.
+- Merge Update on the reencoding function (#1123) by @Toyem.
+- Fix #1126 use ffmpeg from config.ini
+- Merge Fixes my bad on past attempt to deal with BOM (#1130) by @NHOrus.
+- Implement #1128
+  - add new configuration `disableLog` in `config.ini` in `Debug` section. Set to `True` to disable logging.
+
+20211104
+- Fix Issue #1036: update error message for ffmpeg and add option to enable verboseOutput from ffmpeg.
+  - remove `-lossless 1` from webm param due to ffmpeg memory issue might cause ugoira not fully converted.
+  - remove logging from ffmpeg output due to conflict with logger
+- Update ffmpeg detection to return warning if ffmpeg return exit code != 0 when loading for the first time.
+- Update default encoding parameter for webm and webp
+  - ffmpegParam = -row-mt 1 -deadline good -crf 20 -vsync 2 -r 999 -pix_fmt yuv420p
+  - webpParam = -row-mt 1 -lossless 0 -q:v 90 -loop 0 -vsync 2 -r 999
+
+20211030
+- Fix Issue #1035: enhance error detection when converting ugoira.
+- Fix Issue #1031 and #1034: fix command line option for 3 and 8
+
+20211020
+- Fix Issue #1028: Update download new illust parser to use new API.
+- Implement #1027: Add Bookmark Count Option to Option 5, 8.
+- Merge Update PixivFanboxHandler.py (#1026) by amatuerCoder.
+- Add new option for customCleanUpRe in config.ini.
+- Keep case when writing config.ini.
+- Update #1004 rewrite pyexiv2 to version 2.7.0.
+- Merge fix(deps): demjson (#1015) by BassOfBass.
+- Fix #1011: handle user not exists during download.
+- Fix check if pixiv sketch return empty post #1013 #1014.
+- Implement #1005: Resolve and download Pixiv by Fanbox "artist/creator" id.
+- Merge Correct shape of BOM in Downloaded List (#1010) by NHOrus.
+- Implement #1007: Add option to download Pixiv Sketch using option 4.
+- Add check  for R-18/R-18G from pixiv website setting.
+- Implement #1002: update url dump for fanbox and add some typing.
+
+20210822
+- Merge Fix #993 (#995) by amatuerCoder.
+- Merge Get member information adjustment (#992) by amatuerCoder.
+- Merge Fixes some bugs with XMP sidecars. (#985) by Baa.
+- Merge Adds support for .XMP sidecar files. (#980) by Baa.
+- Merge Allows Post Processing to accept command arguments (#979) by Baa.
+
+20210702
+- Update python to 3.9.6 and latest libraries.
+- Skip processing members at all if image list is empty (no folder/avatar/bg will be processed).
+- Merge fixes from amatuerCoder.
+  - #964, #963, #954, #945, #951
+- Merge Change shebang to python3 (#958) by KLsz.
+- Implement #956 additional filename format: %md5%, %sha1%, and %sha256%.
+  Please note that the file-exists check might not works due to the hash can only be calculated after the file is downloaded.
+- Merge fixed an ANSI escape code (#944) by DenDen047.
+- Merge Fix argument mismatch in process_manga_series (#939) by dddlr.
+- Merge fixed regression in console title: using XTerm OSC (#950) by whinette.
+- Update #930, replace resized cover with full size instead.
+- Fix Issue #942: AttributeError when picking "e. Export online bookmark"
+- Implement #940: add new name format: %force_extension{.*}% to force specific extension.
+  Usage = %force_extension{jpeg}% to always set the extension to .jpeg
+- Implement #970: add feature to perform post processing for downloaded files.
+  Add config in [DownloadControl] section:
+  - enablePostProcessing = default False. Set to true to enabled post processing cmd for every downloaded files
+  - postProcessingCmd = command to execute. add %filename% to pass the downloaded filename.
+    NO ERROR HANDLING AT ALL, use on your own risk.
+
 20210421
 - Implement #930: download full size image for fanbox cover.
 - Fix #929: update fanbox post parser for post type = entry.

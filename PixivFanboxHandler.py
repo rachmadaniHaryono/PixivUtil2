@@ -8,11 +8,12 @@ import PixivDownloadHandler
 import PixivHelper
 import PixivModelFanbox
 from PixivException import PixivException
+import PixivArtistHandler
 
 
 def process_fanbox_artist_by_id(caller, config, artist_id, end_page, title_prefix=""):
     config.loadConfig(path=caller.configfile)
-    br = PixivBrowserFactory.getBrowser()
+    br: PixivBrowserFactory.PixivBrowser = PixivBrowserFactory.getBrowser()
 
     caller.set_console_title(title_prefix)
     try:
@@ -60,12 +61,14 @@ def process_fanbox_artist_by_id(caller, config, artist_id, end_page, title_prefi
                 try:
                     process_fanbox_post(caller, config, post, artist)
                 except KeyboardInterrupt:
-                    choice = input("Keyboard Interrupt detected, continue to next post (Y/N)").rstrip("\r")
+                    choice = input("Keyboard Interrupt detected, continue to next post? (Y/N)").rstrip("\r")
                     if choice.upper() == 'N':
                         PixivHelper.print_and_log("info", f"FANBOX artist: {artist}, processing aborted")
-                        break
+                        return
                     else:
                         continue
+            else:
+                PixivHelper.print_and_log("info", f"Unsupported post type: {post.imageId} => {post.type}")
             image_count += 1
             PixivHelper.wait(config)
 
@@ -82,7 +85,7 @@ def process_fanbox_artist_by_id(caller, config, artist_id, end_page, title_prefi
             break
 
 
-def process_fanbox_post(caller, config, post, artist):
+def process_fanbox_post(caller, config, post: PixivModelFanbox.FanboxPost, artist):
     # caller function/method
     # TODO: ideally to be removed or passed as argument
     db = caller.__dbManager__
@@ -106,7 +109,7 @@ def process_fanbox_post(caller, config, post, artist):
 
         if ((not post.is_restricted) or config.downloadCoverWhenRestricted) and (not flag_processed) and config.downloadCover:
             # cover image
-            if post.coverImageUrl is not None:
+            if post.coverImageUrl:
                 # fake the image_url for filename compatibility, add post id and pagenum
                 fake_image_url = post.coverImageUrl.replace("{0}/cover/".format(post.imageId),
                                                             "{0}_".format(post.imageId))
@@ -135,7 +138,8 @@ def process_fanbox_post(caller, config, post, artist):
                                                                          config.overwrite,
                                                                          config.retry,
                                                                          config.backupOldFile,
-                                                                         image=post)
+                                                                         image=post,
+                                                                         download_from=PixivConstant.DOWNLOAD_FANBOX)
                 post_files.append((post.imageId, -1, filename))
                 PixivHelper.get_logger().debug("Download %s result: %s", filename, result)
             else:
@@ -189,8 +193,9 @@ def process_fanbox_post(caller, config, post, artist):
                                                                          False,  # config.overwrite somehow unable to get remote filesize
                                                                          config.retry,
                                                                          config.backupOldFile,
-                                                                         image=post)
-                if result == PixivConstant.PIXIVUTIL_ABORTED:
+                                                                         image=post,
+                                                                         download_from=PixivConstant.DOWNLOAD_FANBOX)
+                if result == PixivConstant.PIXIVUTIL_KEYBOARD_INTERRUPT:
                     raise KeyboardInterrupt()
                 post_files.append((post.imageId, current_page, filename))
 
@@ -230,3 +235,21 @@ def process_fanbox_post(caller, config, post, artist):
             db.insertPostImages(post_files)
 
     db.updatePostUpdateDate(post.imageId, post.updatedDate)
+
+
+def process_pixiv_by_fanbox_id(caller, config, artist_id, start_page=1, end_page=0, tags=None, title_prefix=""):
+    # Implement #1005
+    config.loadConfig(path=caller.configfile)
+    br = PixivBrowserFactory.getBrowser()
+
+    caller.set_console_title(title_prefix)
+    artist = br.fanboxGetArtistById(artist_id)
+    PixivArtistHandler.process_member(caller,
+                                      config,
+                                      artist.artistId,
+                                      user_dir='',
+                                      page=start_page,
+                                      end_page=end_page,
+                                      bookmark=False,
+                                      tags=tags,
+                                      title_prefix=title_prefix)

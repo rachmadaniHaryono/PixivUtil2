@@ -452,11 +452,12 @@ class TestPixivImage(unittest.TestCase):
 class TestPixivBookmark(unittest.TestCase):
     def testPixivBookmarkNewIlust(self):
         # print('\nTesting BookmarkNewIlust')
-        p = open('./test/test-bookmarks_new_ilust.htm', 'r', encoding="utf-8")
-        page = BeautifulSoup(p.read(), features="html5lib")
+        p = open('./test/test-bookmarks_new_ilust.json', 'r', encoding="utf-8")
+        # page = BeautifulSoup(p.read(), features="html5lib")
+        page = p.read()
         result = PixivNewIllustBookmark(page)
 
-        self.assertEqual(len(result.imageList), 20)
+        self.assertEqual(len(result.imageList), 60)
 
     def testPixivImageBookmark(self):
         # print('\nTesting PixivImageBookmark')
@@ -559,6 +560,20 @@ class TestPixivTags(unittest.TestCase):
         print(image.itemList[-1])
         self.assertEqual(image.isLastPage, True)
         self.assertEqual(image.itemList[-1].imageId, 740933)
+
+    # /ajax/search/artworks/GuP or ガルパン or ガールズ%26パンツァー or garupan?word=GuP or ガルパン or ガールズ%26パンツァー or garupan&p=119&s_mode=s_tag&type=all&order=date_d
+    def testTagsSearchPartialNotLast(self):
+        path = './test/tag-not-last-page.json'
+        p = open(path, 'r', encoding="utf-8")
+        response = p.read()
+        tags = ''
+
+        image = PixivTags()
+        image.parseTags(response, tags, last_page)
+
+        print(image.itemList[-1])
+        self.assertEqual(image.isLastPage, False)
+        self.assertEqual(image.itemList[-1].imageId, 91248467)
 
     # search.php?s_mode=s_tag&word=%E5%88%9D%E6%98%A5%E9%A3%BE%E5%88%A9
     def testTagsSearchPartial(self):
