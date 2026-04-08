@@ -12,3 +12,4 @@ colorama>=0.4.4
 cloudscraper>=1.2.58
 curl_cffi>=0.11.3
 # pyexiv2>=2.7.0 # Required for writeImageXMP.
+urllib3>=2.6.3 # not directly required, pinned by Snyk to avoid a vulnerability
